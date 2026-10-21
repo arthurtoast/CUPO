@@ -155,6 +155,34 @@ La cita guarda una copia de los datos del cliente porque el cliente no tiene cue
 | Sprint 2 | 21 nov | Historias del Sprint 2 cerradas en GitHub · Ajustes del feedback aplicados · Pruebas básicas de integración |
 | Sprint 3 | 28 nov | Pruebas sobre flujos principales · Producto estable en producción · Propuesta de valor y modelo de negocio |
 
+## Correr en local
+
+**Requisitos:** Node.js 20.9 o superior y Docker (Docker Desktop u OrbStack) encendido, que Supabase usa para levantar la base local.
+
+1. Instala las dependencias:
+
+   ```bash
+   npm install
+   ```
+
+2. Levanta Supabase en local:
+
+   ```bash
+   npx supabase start
+   ```
+
+3. Copia `.env.example` a `.env.local` y llénalo con los valores de `npx supabase status -o env` (`API_URL` va en `NEXT_PUBLIC_SUPABASE_URL` y `PUBLISHABLE_KEY` en `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`):
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Arranca la aplicación en [http://localhost:3000](http://localhost:3000):
+
+   ```bash
+   npm run dev
+   ```
+
 ## Forma de trabajo
 
 - Scrum: el backlog vive en GitHub Issues y en el Project "Cupo — Backlog", con las columnas Backlog, Sprint, En progreso y Listo.
