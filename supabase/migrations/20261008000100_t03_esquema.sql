@@ -60,6 +60,13 @@ create table public.negocio (
   telefono_publico text check (char_length(telefono_publico) <= 30),
   direccion        text check (char_length(direccion) <= 200),
   creado_en        timestamptz not null default now()
+,
+  -- La página pública vive en /<slug>: un slug igual a una ruta de la app quedaría
+  -- tapado por esa ruta. Al agregar rutas de primer nivel, agrégalas aquí.
+  constraint negocio_slug_no_reservado check (slug <> all (array[
+    'api', 'auth', 'panel', 'entrar', 'registro', 'cancelar', 'reservar',
+    'salir', 'ayuda', 'admin', 'static', 'public', 'favicon-ico'
+  ]))
 );
 
 comment on table public.negocio is

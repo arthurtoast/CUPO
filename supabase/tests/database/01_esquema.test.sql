@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(18);
+select plan(19);
 
 -- Las cinco tablas del modelo existen
 select has_table('public', 'negocio',          'existe negocio');
@@ -35,6 +35,8 @@ select throws_ok($$ insert into negocio (id, nombre, slug)
                  '23505', null, 'un usuario no puede tener dos negocios');
 select throws_ok($$ update negocio set slug = 'Con Espacios' where slug = 'prueba-esquema' $$,
                  '23514', null, 'el slug solo admite minúsculas, números y guiones');
+select throws_ok($$ update negocio set slug = 'panel' where slug = 'prueba-esquema' $$,
+                 '23514', null, 'el slug no puede ser una ruta de la app (/panel, /entrar, ...)');
 select throws_ok($$ update negocio set color_acento = 'azul' where slug = 'prueba-esquema' $$,
                  '23514', null, 'el color de acento debe ser hexadecimal');
 select throws_ok($$ update negocio set zona_horaria = 'Marte/Olimpo' where slug = 'prueba-esquema' $$,
