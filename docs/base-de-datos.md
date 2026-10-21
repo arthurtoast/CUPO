@@ -9,7 +9,8 @@ supabase/
 │   ├── 20261008000200_t04_rls_vistas.sql           Row Level Security y vistas públicas
 │   └── 20261008000300_t05_traslape_reservar_cita.sql   exclusión sin traslape y reservar_cita
 ├── seed.sql                                        negocio de prueba (solo local)
-└── tests/database/*.test.sql                       pruebas pgTAP
+├── tests/database/*.test.sql                       pruebas pgTAP
+└── tests/concurrencia.sh                           N reservas simultáneas del mismo hueco
 ```
 
 ## Uso en local
@@ -20,6 +21,9 @@ Requiere Docker Desktop y Supabase CLI, con el proyecto ya inicializado (`supaba
 supabase start        # levanta Postgres, Auth, Storage y el buzón de correo de prueba
 supabase db reset     # borra la base local, aplica las migraciones en orden y corre seed.sql
 supabase test db      # corre las pruebas de supabase/tests
+npm run test:concurrencia               # 20 reservas al mismo tiempo: debe ganar una
+npm run test:concurrencia -- --n 50     # más reservas; --help para ver opciones
+npm test              # pruebas unitarias del cálculo de huecos y la validación (sin base)
 ```
 
 La semilla crea **Estética Lupita** (`/estetica-lupita`), con el horario y la marca de los wireframes, un servicio de 45 minutos, dos citas, una cancelada y un bloqueo. Las fechas se calculan a partir del día en que se corre, así que nunca caducan. Usuario del dueño en local: `lupita@cupo.test` / `cupo-local-123`.
@@ -52,7 +56,7 @@ Fechas y horas absolutas en `timestamptz` (UTC). La interfaz las muestra con `ne
 | `vista_horario` | `negocio_id, dia_semana, hora_inicio, hora_fin` |
 | `vista_ocupado` | `negocio_id, inicio, fin` de citas confirmadas y bloqueos que aún no terminan |
 
-Huecos libres = bloques de `vista_horario` divididos cada `duracion_min` desde `hora_inicio`, menos los que se enciman con `vista_ocupado`, menos los que ya pasaron.
+Huecos libres = bloques de `vista_horario` divididos cada `duracion_min` desde `hora_inicio`, menos los que se enciman con `vista_ocupado`, menos los que ya pasaron. La página pública lo calcula en `lib/huecos.ts` con estas mismas reglas.
 
 ## `reservar_cita`
 
@@ -68,7 +72,7 @@ select * from reservar_cita(
 -- devuelve: cita_id, token_cancelacion, inicio, fin
 ```
 
-Desde la app: `supabase.rpc('reservar_cita', { p_slug, p_inicio, p_nombre, p_correo, p_telefono })`.
+Desde la app (`app/[slug]/actions.ts`): `supabase.rpc('reservar_cita', { p_slug, p_inicio, p_nombre, p_correo, p_telefono, p_servicio_id })`. Los mensajes para el cliente están en `lib/reserva.ts`.
 
 Si algo falla, el mensaje del error es uno de estos códigos, pensados para traducirse a un texto en la interfaz:
 
