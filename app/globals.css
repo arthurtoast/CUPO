@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
+/* Paleta de los wireframes (docs/wireframes/). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --fondo: #f4f3ef;
+  --superficie: #ffffff;
+  --tinta: #1a1a18;
+  --tinta-suave: #5c5a52;
+  --borde: #e2e0d8;
+  --borde-control: #dcdad1;
+  --error: #8f3a2c;
+  --error-fondo: #fbeeea;
+  /* Acento por defecto; en el panel se reemplaza con negocio.color_acento. */
+  --acento: #2b5ce6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-borde: var(--borde);
+  --color-borde-control: var(--borde-control);
+  --color-error: var(--error);
+  --color-error-fondo: var(--error-fondo);
+  --font-sans: var(--font-plex-sans);
+  --font-display: var(--font-space-grotesk);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fondo);
+  color: var(--tinta);
 }
