@@ -20,7 +20,7 @@ export async function createClient() {
             );
           } catch {
             // Los Server Components no pueden escribir cookies. Se ignora
-            // porque el refresco de sesión lo hará el proxy/middleware.
+            // porque el refresco de sesión lo hace proxy.ts.
           }
         },
       },
