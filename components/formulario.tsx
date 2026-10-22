@@ -73,3 +73,11 @@ export function BotonEnviar({
     </button>
   );
 }
+
+export function MensajeGuardado({ visible }: { visible: boolean }) {
+  return (
+    <p role="status" className="text-sm font-medium text-exito">
+      {visible ? "Guardado" : null}
+    </p>
+  );
+}
