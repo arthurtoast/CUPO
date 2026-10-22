@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { cerrarSesion } from "@/app/entrar/actions";
 import { createClient } from "@/lib/supabase/server";
+import { Navegacion } from "./navegacion";
 
 function iniciales(nombre: string) {
   return nombre
@@ -13,11 +14,24 @@ function iniciales(nombre: string) {
     .join("");
 }
 
-function Encabezado({ children }: { children?: React.ReactNode }) {
+function Encabezado({
+  children,
+  navegacion = false,
+}: {
+  children?: React.ReactNode;
+  navegacion?: boolean;
+}) {
   return (
-    <header className="flex h-[68px] shrink-0 items-center justify-between gap-4 border-b border-borde bg-superficie px-4 sm:px-10">
-      <span className="font-display text-[23px] font-bold tracking-tight">cupo</span>
-      {children}
+    <header className="shrink-0 border-b border-borde bg-superficie">
+      <div className="flex h-[68px] items-center justify-between gap-4 px-4 sm:px-10">
+        <div className="flex items-center gap-10 self-stretch">
+          <span className="font-display text-[23px] font-bold tracking-tight">cupo</span>
+          {navegacion ? <Navegacion className="hidden self-stretch sm:flex" /> : null}
+        </div>
+        {children}
+      </div>
+      {/* En celular el menú baja a su propia fila para no apretar el encabezado. */}
+      {navegacion ? <Navegacion className="flex px-4 sm:hidden" /> : null}
     </header>
   );
 }
@@ -49,7 +63,7 @@ async function PanelConSesion({ children }: { children: React.ReactNode }) {
       className="flex flex-1 flex-col"
       style={{ "--acento": negocio?.color_acento ?? "#2B5CE6" } as React.CSSProperties}
     >
-      <Encabezado>
+      <Encabezado navegacion>
         <div className="flex min-w-0 items-center gap-3">
           <span className="truncate text-sm text-tinta-suave">{nombre}</span>
           <span
