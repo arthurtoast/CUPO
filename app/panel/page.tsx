@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { MensajeError } from "@/components/formulario";
+import { enlacePublico, enlaceVisible, origenDesdeHeaders } from "@/lib/enlace";
 import { agruparPorDia, claveDia, etiquetaDia, formatearHora } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
+import { BotonCopiar } from "./boton-copiar";
 
 export const metadata: Metadata = { title: "Agenda · Cupo" };
 
@@ -162,6 +165,50 @@ async function ListaCitas() {
   );
 }
 
+// El origen sale de los headers del request para que el enlace sirva igual en
+// local (localhost:3000) que en producción.
+async function EnlacePublico() {
+  const [encabezados, supabase] = await Promise.all([headers(), createClient()]);
+  const { data } = await supabase.auth.getClaims();
+  const { data: negocio } = await supabase
+    .from("negocio")
+    .select("slug")
+    .eq("id", data?.claims?.sub ?? "")
+    .maybeSingle();
+
+  if (!negocio?.slug) return null;
+
+  const enlace = enlacePublico(origenDesdeHeaders(encabezados), negocio.slug);
+
+  return (
+    <section
+      aria-labelledby="enlace-publico"
+      className="flex flex-col gap-3 rounded-[14px] border border-borde bg-superficie p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:p-5"
+    >
+      <div className="flex min-w-0 flex-col gap-1">
+        <h2 id="enlace-publico" className="font-display text-base font-bold">
+          Tu enlace público
+        </h2>
+        <p className="break-all text-[15px] font-medium">{enlaceVisible(enlace)}</p>
+        <p className="text-[13px] text-tinta-suave">
+          Compártelo por WhatsApp o Instagram para que tus clientes reserven.
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2">
+        <BotonCopiar texto={enlace} />
+        <a
+          href={enlace}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-h-11 items-center text-sm font-semibold text-[var(--acento)] underline-offset-2 hover:underline"
+        >
+          Ver mi página
+        </a>
+      </div>
+    </section>
+  );
+}
+
 export default function Panel() {
   return (
     <>
@@ -169,6 +216,9 @@ export default function Panel() {
         <h1 className="font-display text-[28px] font-bold tracking-tight">Agenda</h1>
         <p className="text-[15px] text-tinta-suave">Tus citas de hoy en adelante.</p>
       </div>
+      <Suspense fallback={null}>
+        <EnlacePublico />
+      </Suspense>
       <Suspense fallback={<p className="text-sm text-tinta-suave">Cargando tu agenda…</p>}>
         <ListaCitas />
       </Suspense>
