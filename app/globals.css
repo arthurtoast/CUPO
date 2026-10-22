@@ -10,6 +10,7 @@
   --borde-control: #dcdad1;
   --error: #8f3a2c;
   --error-fondo: #fbeeea;
+  --exito: #2f7a55;
   /* Acento por defecto; en el panel se reemplaza con negocio.color_acento. */
   --acento: #2b5ce6;
 }
@@ -23,6 +24,7 @@
   --color-borde-control: var(--borde-control);
   --color-error: var(--error);
   --color-error-fondo: var(--error-fondo);
+  --color-exito: var(--exito);
   --font-sans: var(--font-plex-sans);
   --font-display: var(--font-space-grotesk);
 }
