@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { BotonCopiar } from "@/app/panel/boton-copiar";
 import { Campo, MensajeError } from "@/components/formulario";
 import type { Dia, Hueco } from "@/lib/huecos";
 import { ERRORES_DE_HORARIO, NOMBRE_MAX } from "@/lib/reserva";
@@ -95,6 +96,8 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) 
           telefono={marca.telefono}
           direccion={marca.direccion}
           slug={slug}
+          enlaceCancelar={estado.enlaceCancelar}
+          correoEnviadoA={estado.correoEnviadoA}
         />
       </main>
     );
@@ -396,6 +399,8 @@ function Confirmacion({
   telefono,
   direccion,
   slug,
+  enlaceCancelar,
+  correoEnviadoA,
 }: {
   inicio: string;
   zonaHoraria: string;
@@ -404,6 +409,8 @@ function Confirmacion({
   telefono: string | null;
   direccion: string | null;
   slug: string;
+  enlaceCancelar: string;
+  correoEnviadoA: string | null;
 }) {
   return (
     <section
@@ -421,10 +428,25 @@ function Confirmacion({
         </p>
         {direccion && <p className="text-tinta-suave">{direccion}</p>}
       </div>
-      <p className="text-sm text-tinta-suave">
-        Guarda esta información.
-        {telefono ? ` Si necesitas cambiarla, llama al ${telefono}.` : ""}
-      </p>
+      {correoEnviadoA && (
+        <p className="text-sm">
+          Te enviamos la confirmación a <span className="font-medium">{correoEnviadoA}</span>.
+        </p>
+      )}
+      {/* HU-12: el enlace también va aquí, por si el correo no llega. */}
+      <div className="flex flex-col gap-2 rounded-[10px] border border-borde bg-fondo p-4">
+        <p className="text-sm font-medium">Enlace para cancelar tu cita</p>
+        <p className="break-all text-sm text-tinta-suave">{enlaceCancelar}</p>
+        <div>
+          <BotonCopiar texto={enlaceCancelar} />
+        </div>
+        <p className="text-xs text-tinta-suave">
+          Guárdalo. Cualquiera con este enlace puede cancelar la cita: no lo compartas.
+        </p>
+      </div>
+      {telefono && (
+        <p className="text-sm text-tinta-suave">Si necesitas cambiarla, llama al {telefono}.</p>
+      )}
       {/* Recarga completa: limpia el formulario y trae los horarios al día. */}
       <a href={`/${slug}`} className="font-medium text-[var(--acento)]">
         Reservar otra cita

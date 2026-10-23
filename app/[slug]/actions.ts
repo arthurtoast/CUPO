@@ -1,7 +1,13 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
+import { after } from "next/server";
+import { baseDeEnlaces } from "@/lib/config-correo";
+import { origenDesdeHeaders } from "@/lib/enlace";
+import { correosConfigurados } from "@/lib/enviar-correo";
 import { createClient } from "@/lib/supabase/server";
+import { notificarCitaNueva } from "./notificar";
 import {
   ERRORES_DE_HORARIO,
   codigoDeError,
@@ -21,7 +27,15 @@ export type EstadoReserva =
       // Hueco que la base rechazó; la página lo deselecciona.
       inicioRechazado?: string;
     }
-  | { tipo: "reservada"; inicio: string; fin: string };
+  | {
+      tipo: "reservada";
+      inicio: string;
+      fin: string;
+      // HU-12: el enlace también se muestra en pantalla, por si el correo no llega.
+      enlaceCancelar: string;
+      // Correo al que se envió la confirmación; null si no hay SMTP configurado.
+      correoEnviadoA: string | null;
+    };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -75,8 +89,31 @@ export async function reservar(
     return { tipo: "error", mensaje: mensajeDeError(codigo), codigo };
   }
 
-  // El token de cancelación no se manda al navegador: viaja en el correo de
-  // confirmación (HU-12, HU-13).
+  // HU-12: el enlace de cancelación lleva el token. Solo lo ve quien reservó:
+  // en su pantalla de confirmación y en su correo.
+  const base = baseDeEnlaces(process.env, origenDesdeHeaders(await headers()));
+  const enlaceCancelar = `${base}/cancelar/${data.token_cancelacion}`;
+  const servicio = UUID.test(servicioId) ? servicioId : null;
+
+  // Los correos salen después de responder: el cliente no espera al servidor
+  // de correo y, si falla, la cita ya quedó guardada.
+  after(() =>
+    notificarCitaNueva({
+      slug,
+      servicioId: servicio,
+      inicio: data.inicio,
+      cliente: { nombre, correo, telefono },
+      enlaceCancelar,
+      enlaceAgenda: `${base}/panel`,
+    }),
+  );
+
   refresh();
-  return { tipo: "reservada", inicio: data.inicio, fin: data.fin };
+  return {
+    tipo: "reservada",
+    inicio: data.inicio,
+    fin: data.fin,
+    enlaceCancelar,
+    correoEnviadoA: correosConfigurados() ? correo : null,
+  };
 }
