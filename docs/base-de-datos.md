@@ -7,7 +7,8 @@ supabase/
 ├── migrations/
 │   ├── 20261008000100_t03_esquema.sql              tablas y reglas de integridad
 │   ├── 20261008000200_t04_rls_vistas.sql           Row Level Security y vistas públicas
-│   └── 20261008000300_t05_traslape_reservar_cita.sql   exclusión sin traslape y reservar_cita
+│   ├── 20261008000300_t05_traslape_reservar_cita.sql   exclusión sin traslape y reservar_cita
+│   └── 20261028000100_hu13_cancelar_por_token.sql      cita_por_token y cancelar_por_token
 ├── seed.sql                                        negocio de prueba (solo local)
 ├── tests/database/*.test.sql                       pruebas pgTAP
 └── tests/concurrencia.sh                           N reservas simultáneas del mismo hueco
@@ -44,7 +45,7 @@ Fechas y horas absolutas en `timestamptz` (UTC). La interfaz las muestra con `ne
 
 | Identidad | Rol de Postgres | Puede |
 | --- | --- | --- |
-| Visitante sin sesión | `anon` | Leer las vistas públicas y ejecutar `reservar_cita`. Ninguna tabla. |
+| Visitante sin sesión | `anon` | Leer las vistas públicas y ejecutar `reservar_cita`, `cita_por_token` y `cancelar_por_token`. Ninguna tabla. |
 | Dueño del negocio | `authenticated` | Leer y editar sus filas de `negocio`, `horario_atencion`, `servicio`, `bloqueo`. En `cita`: leer y cancelar (`estado`), nunca crear, borrar ni cambiar datos del cliente. |
 
 ### Vistas públicas (para la página de reserva)
@@ -86,6 +87,25 @@ Si algo falla, el mensaje del error es uno de estos códigos, pensados para trad
 | `horario_no_alineado` | P0001 | No coincide con la rejilla (09:00, 09:45, 10:30… con 45 min) |
 | `horario_bloqueado` | P0001 | Se encima con un bloqueo |
 | `horario_ocupado` | 23P01 | Otra persona tomó ese hueco: pedir que elija otro |
+
+## `cita_por_token` y `cancelar_por_token` (HU-13)
+
+El enlace del correo de confirmación es `/cancelar/<token>`. El token (64 hexadecimales) es la única prueba de que la cita es de quien lo abre.
+
+```sql
+select * from cita_por_token('<token>');      -- resumen para mostrar; cero filas si no existe
+select * from cancelar_por_token('<token>');  -- la pasa a cancelada; regresa cita_id, estado, inicio, cancelada_en
+```
+
+`cita_por_token` no regresa el correo ni el teléfono del cliente ni el token. Un token mal escrito y uno que no existe dan el mismo resultado (cero filas), para no dar pistas.
+
+| Código | SQLSTATE | Significa |
+| --- | --- | --- |
+| `token_invalido` | P0001 | El token no tiene formato o no corresponde a ninguna cita |
+| `cita_ya_cancelada` | P0001 | Ya estaba cancelada; no cambia nada |
+| `cita_pasada` | P0001 | La cita ya empezó o ya pasó |
+
+La cita no se borra: queda `cancelada` con `cancelada_en`, el negocio la ve tachada en su agenda y el horario se libera solo, porque `cita_sin_traslape` y `vista_ocupado` solo cuentan las confirmadas. Más detalle en `docs/cancelacion.md`.
 
 ## Reglas de integridad
 
