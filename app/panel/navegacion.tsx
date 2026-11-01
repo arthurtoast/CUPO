@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ENLACES = [
   { href: "/panel", texto: "Agenda" },
   { href: "/panel/disponibilidad", texto: "Disponibilidad" },
+  { href: "/panel/bloqueos", texto: "Bloqueos" },
 ] as const;
 
 export function Navegacion({ className = "" }: { className?: string }) {
