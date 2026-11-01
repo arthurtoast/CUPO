@@ -8,7 +8,8 @@ supabase/
 │   ├── 20261008000100_t03_esquema.sql              tablas y reglas de integridad
 │   ├── 20261008000200_t04_rls_vistas.sql           Row Level Security y vistas públicas
 │   ├── 20261008000300_t05_traslape_reservar_cita.sql   exclusión sin traslape y reservar_cita
-│   └── 20261028000100_hu13_cancelar_por_token.sql      cita_por_token y cancelar_por_token
+│   ├── 20261028000100_hu13_cancelar_por_token.sql      cita_por_token y cancelar_por_token
+│   └── 20261031000100_hu05_bloqueos.sql                columna serie y crear_bloqueos
 ├── seed.sql                                        negocio de prueba (solo local)
 ├── tests/database/*.test.sql                       pruebas pgTAP
 └── tests/concurrencia.sh                           N reservas simultáneas del mismo hueco
@@ -36,7 +37,7 @@ La semilla crea **Estética Lupita** (`/estetica-lupita`), con el horario y la m
 | `negocio` | Marca y datos públicos del negocio | `id` = id del usuario en `auth.users`; sin contraseñas |
 | `horario_atencion` | Bloques de atención por día | `dia_semana` ISO: 1 = lunes … 7 = domingo; horas locales del negocio; la comida se modela partiendo el día |
 | `servicio` | Duración de la cita | En el MVP, uno activo por negocio |
-| `bloqueo` | Vacaciones o tardes ocupadas | El `motivo` nunca se muestra al cliente |
+| `bloqueo` | Vacaciones o tardes ocupadas | El `motivo` nunca se muestra al cliente; `serie` agrupa los días de una franja diaria |
 | `cita` | Reservas | Copia de nombre, correo y teléfono (el cliente no tiene cuenta); `estado` confirmada o cancelada |
 
 Fechas y horas absolutas en `timestamptz` (UTC). La interfaz las muestra con `negocio.zona_horaria`.
@@ -106,6 +107,16 @@ select * from cancelar_por_token('<token>');  -- la pasa a cancelada; regresa ci
 | `cita_pasada` | P0001 | La cita ya empezó o ya pasó |
 
 La cita no se borra: queda `cancelada` con `cancelada_en`, el negocio la ve tachada en su agenda y el horario se libera solo, porque `cita_sin_traslape` y `vista_ocupado` solo cuentan las confirmadas. Más detalle en `docs/cancelacion.md`.
+
+## `crear_bloqueos` (HU-05)
+
+```sql
+select * from crear_bloqueos('2026-11-02', '2026-11-06');                     -- días completos
+select * from crear_bloqueos('2026-11-02', '2026-11-06', '14:00', '15:00');   -- franja diaria
+-- devuelve: creados, serie, citas_afectadas
+```
+
+Corre con la sesión del dueño (no es security definer), así que RLS solo le deja escribir en su negocio. Las fechas y horas son locales del negocio; la conversión a UTC se hace en la función con `negocio.zona_horaria`. Las citas confirmadas que quedan dentro no se cancelan: `citas_afectadas` lo avisa. Errores: `sin_sesion`, `sin_negocio`, `rango_invalido`, `rango_muy_largo`, `fecha_pasada`, `horas_incompletas`, `horas_invalidas`, `motivo_largo`. Más detalle en `docs/bloqueos.md`.
 
 ## Reglas de integridad
 
