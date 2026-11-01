@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(31);
+select plan(32);
 
 select has_function('public', 'crear_bloqueos',
                     array['date', 'date', 'time without time zone', 'time without time zone', 'text'],
@@ -119,6 +119,19 @@ select lives_ok($$ select * from dst, crear_bloqueos(dst.cambio - 1, dst.cambio 
 select is((select count(*)::int from bloqueo
             where (inicio at time zone 'America/New_York')::time = '14:00'), 3,
           'con cambio de horario de por medio, cada día queda a las 14:00 hora local');
+
+-- La franja 02:00-03:00 del día en que se adelanta el reloj no existe: ese día se
+-- omite en vez de fallar (el siguiente cambio de primavera en Nueva York)
+create temp table dst_primavera on commit drop as
+with dias as (
+  select d::date as dia,
+         ((d::date + time '12:00') at time zone 'America/New_York') - ((d::date + time '12:00') at time zone 'UTC') as desfase
+  from generate_series(current_date + 2, current_date + 400, interval '1 day') d
+), marcados as (select dia, desfase, lag(desfase) over (order by dia) as anterior from dias)
+select min(dia) as cambio from marcados where desfase < anterior;
+grant select on dst_primavera to authenticated;
+select is((select creados from dst_primavera p, crear_bloqueos(p.cambio - 1, p.cambio + 1, '02:00', '03:00')), 2,
+          'la franja que cae en la hora que no existe se omite ese día (2 de 3)');
 
 -- ---------------------------------------------------------------- sin sesión
 reset role;

@@ -116,7 +116,7 @@ select * from crear_bloqueos('2026-11-02', '2026-11-06', '14:00', '15:00');   --
 -- devuelve: creados, serie, citas_afectadas
 ```
 
-Corre con la sesión del dueño (no es security definer), así que RLS solo le deja escribir en su negocio. Las fechas y horas son locales del negocio; la conversión a UTC se hace en la función con `negocio.zona_horaria`. Las citas confirmadas que quedan dentro no se cancelan: `citas_afectadas` lo avisa. Errores: `sin_sesion`, `sin_negocio`, `rango_invalido`, `rango_muy_largo`, `fecha_pasada`, `horas_incompletas`, `horas_invalidas`, `motivo_largo`. Más detalle en `docs/bloqueos.md`.
+Corre con la sesión del dueño (no es security definer), así que RLS solo le deja escribir en su negocio. Las fechas y horas son locales del negocio; la conversión a UTC se hace en la función con `negocio.zona_horaria`. Las citas confirmadas que quedan dentro no se cancelan: `citas_afectadas` lo avisa. Errores (SQLSTATE P0001, el mensaje es el código): `sin_sesion`, `sin_negocio`, `rango_invalido`, `rango_muy_largo` (`hasta - desde > 365`), `fecha_pasada` (solo si `hasta` ya pasó), `horas_incompletas`, `horas_invalidas`, `motivo_largo` (más de 120 caracteres; vacío se guarda como NULL). Una franja de un solo día o un bloqueo de días completos no lleva `serie`. Contrato completo y formatos en `docs/bloqueos.md`.
 
 ## Reglas de integridad
 

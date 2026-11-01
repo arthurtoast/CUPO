@@ -104,11 +104,18 @@ begin
            ((p_hasta + 1)::timestamp) at time zone v_zona as fin
     where p_hora_inicio is null
     union all
-    -- Franja diaria: un rango por día
-    select (d::date + p_hora_inicio) at time zone v_zona,
-           (d::date + p_hora_fin) at time zone v_zona
-    from pg_catalog.generate_series(p_desde::timestamp, p_hasta::timestamp, interval '1 day') as d
-    where p_hora_inicio is not null
+    -- Franja diaria: un rango por día. Si el día del cambio de horario la franja
+    -- cae completa en la hora que no existe (p. ej. 02:00-03:00 al adelantar el
+    -- reloj), PostgreSQL corre las dos horas al mismo instante y el rango queda
+    -- vacío: ese día se omite, porque no hay nada que bloquear.
+    select f.inicio, f.fin
+    from (
+      select (d::date + p_hora_inicio) at time zone v_zona as inicio,
+             (d::date + p_hora_fin) at time zone v_zona as fin
+      from pg_catalog.generate_series(p_desde::timestamp, p_hasta::timestamp, interval '1 day') as d
+      where p_hora_inicio is not null
+    ) as f
+    where f.fin > f.inicio
   ), nuevos as (
     insert into public.bloqueo (negocio_id, inicio, fin, motivo, serie)
     select v_negocio, r.inicio, r.fin, v_motivo, v_serie from rangos r
