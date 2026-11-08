@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { BotonCopiar } from "@/app/panel/boton-copiar";
+import { EncabezadoNegocio, type MarcaVisible } from "@/components/encabezado-negocio";
 import { Campo, MensajeError } from "@/components/formulario";
 import type { Dia, Hueco } from "@/lib/huecos";
 import { ERRORES_DE_HORARIO, NOMBRE_MAX } from "@/lib/reserva";
@@ -9,13 +10,7 @@ import { reservar, type EstadoReserva } from "./actions";
 
 type Props = {
   slug: string;
-  marca: {
-    nombre: string;
-    descripcion: string | null;
-    logoUrl: string | null;
-    telefono: string | null;
-    direccion: string | null;
-  };
+  marca: MarcaVisible;
   servicio: { id: string; nombre: string; duracion_min: number } | null;
   zonaHoraria: string;
   dias: Dia[];
@@ -50,15 +45,6 @@ function formatoCita(inicio: string, zona: string) {
     minute: "2-digit",
     hourCycle: "h23",
   }).format(new Date(inicio));
-}
-
-function iniciales(nombre: string) {
-  return nombre
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((palabra) => palabra[0]!.toUpperCase())
-    .join("");
 }
 
 const libres = (dia: Dia) => dia.huecos.filter((h) => h.libre).length;
@@ -320,45 +306,21 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) 
 
 // ---------------------------------------------------------------------------
 
+// HU-07: logo, descripción, teléfono y dirección en el encabezado.
 function Encabezado({
   marca,
   servicio,
   sinInstruccion = false,
 }: Pick<Props, "marca" | "servicio"> & { sinInstruccion?: boolean }) {
   return (
-    <header className="border-b border-borde bg-superficie px-5 py-5">
-      <div className="flex items-center gap-4">
-        {marca.logoUrl ? (
-          // El logo viene de cualquier dominio que configure el negocio; next/image
-          // pediría declarar cada dominio en next.config.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={marca.logoUrl}
-            alt=""
-            className="size-14 shrink-0 rounded-[12px] border border-borde object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="flex size-14 shrink-0 items-center justify-center rounded-[12px] bg-borde font-display text-lg font-bold text-tinta-suave"
-          >
-            {iniciales(marca.nombre)}
-          </span>
-        )}
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight">{marca.nombre}</h1>
-          {servicio && (
-            <p className="text-sm text-tinta-suave">
-              {servicio.nombre} · {servicio.duracion_min} min
-            </p>
-          )}
-        </div>
-      </div>
-      {marca.descripcion && <p className="mt-3 text-tinta-suave">{marca.descripcion}</p>}
+    <EncabezadoNegocio
+      marca={marca}
+      subtitulo={servicio ? `${servicio.nombre} · ${servicio.duracion_min} min` : undefined}
+    >
       {!sinInstruccion && (
         <p className="mt-3">Elige el día y la hora que te acomode. No necesitas cuenta.</p>
       )}
-    </header>
+    </EncabezadoNegocio>
   );
 }
 

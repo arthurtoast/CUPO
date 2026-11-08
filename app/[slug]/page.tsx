@@ -3,14 +3,13 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { calcularDias } from "@/lib/huecos";
+import { COLOR_POR_DEFECTO, esColorValido } from "@/lib/marca";
 import { leerDatosReserva, leerMarca } from "./datos";
 import { Reservador } from "./reservador";
 
 // Cuántos días se ofrecen a partir de hoy. Se puede cambiar con la variable de
 // entorno CUPO_DIAS_VISIBLES (1 a 60).
 const DIAS_VISIBLES = rango(Number(process.env.CUPO_DIAS_VISIBLES ?? 14), 1, 60, 14);
-
-const COLOR_POR_DEFECTO = "#2B5CE6";
 
 function rango(n: number, min: number, max: number, porDefecto: number) {
   return Number.isInteger(n) && n >= min && n <= max ? n : porDefecto;
@@ -49,9 +48,8 @@ async function Reserva({ params }: { params: PageProps<"/[slug]">["params"] }) {
   const hasta = new Date(ahora.getTime() + (DIAS_VISIBLES + 1) * 86_400_000);
   const { servicio, horario, ocupados } = await leerDatosReserva(marca.id, hasta);
 
-  const acento = /^#[0-9A-Fa-f]{6}$/.test(marca.color_acento ?? "")
-    ? marca.color_acento!
-    : COLOR_POR_DEFECTO;
+  // HU-06: el color del negocio pinta botones y selección de día y hora.
+  const acento = esColorValido(marca.color_acento) ? marca.color_acento : COLOR_POR_DEFECTO;
 
   const dias =
     servicio && horario.length > 0
@@ -67,7 +65,7 @@ async function Reserva({ params }: { params: PageProps<"/[slug]">["params"] }) {
 
   return (
     <div
-      className="flex flex-1 flex-col"
+      className="flex flex-1 flex-col selection:bg-[var(--acento)] selection:text-white"
       style={{ "--acento": acento } as React.CSSProperties}
     >
       <Reservador
