@@ -8,6 +8,7 @@ import { enlacePublico, enlaceVisible, origenDesdeHeaders } from "@/lib/enlace";
 import { agruparPorDia, claveDia, etiquetaDia, formatearHora } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
 import { BotonCopiar } from "./boton-copiar";
+import { CancelarCita } from "./cancelar-cita";
 
 export const metadata: Metadata = { title: "Agenda · Cupo" };
 
@@ -29,11 +30,14 @@ function formatearTelefono(telefono: string) {
     : telefono;
 }
 
-function TarjetaCita({ cita, zona }: { cita: Cita; zona: string }) {
+function TarjetaCita({ cita, zona, ahora }: { cita: Cita; zona: string; ahora: Date }) {
   const inicio = new Date(cita.inicio);
   const fin = new Date(cita.fin);
   const duracion = Math.round((fin.getTime() - inicio.getTime()) / 60_000);
   const cancelada = cita.estado === "cancelada";
+  // HU-15: solo una cita confirmada que todavía no empieza se puede cancelar
+  // (la misma regla que cancelar_cita_negocio).
+  const cancelable = !cancelada && inicio.getTime() > ahora.getTime();
 
   return (
     <li
@@ -75,6 +79,11 @@ function TarjetaCita({ cita, zona }: { cita: Cita; zona: string }) {
           </a>
         </div>
       </div>
+      {cancelable && (
+        <div className="sm:shrink-0">
+          <CancelarCita citaId={cita.id} cliente={cita.nombre_cliente} />
+        </div>
+      )}
     </li>
   );
 }
@@ -155,7 +164,7 @@ async function ListaCitas() {
             </div>
             <ul className="flex flex-col gap-2.5">
               {items.map((cita) => (
-                <TarjetaCita key={cita.id} cita={cita} zona={zona} />
+                <TarjetaCita key={cita.id} cita={cita} zona={zona} ahora={ahora} />
               ))}
             </ul>
           </section>

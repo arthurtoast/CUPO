@@ -183,3 +183,67 @@ export function avisoParaNegocio(datos: DatosCita, para: string): Correo {
     html,
   };
 }
+
+// ---------------------------------------------------------------------------
+// HU-15: aviso al cliente cuando el negocio cancela su cita
+// ---------------------------------------------------------------------------
+
+export type DatosCancelacionNegocio = {
+  negocio: DatosCita["negocio"];
+  servicio: DatosCita["servicio"];
+  cliente: { nombre: string; correo: string };
+  inicio: string; // ISO 8601
+  nota: string | null; // mensaje opcional del negocio
+  enlaceReservar: string; // página pública, para elegir otro horario
+};
+
+export function avisoCancelacionPorNegocio(
+  datos: DatosCancelacionNegocio,
+  responderA: string | null = null,
+): Correo {
+  const { negocio, servicio, cliente } = datos;
+  const fecha = fechaDeCita(datos.inicio, negocio.zonaHoraria);
+  const titulo = "Tu cita fue cancelada";
+
+  const filas: Fila[] = [
+    ["Cuándo era", fecha],
+    ["Servicio", `${servicio.nombre} · ${servicio.duracionMin} min`],
+    ["Negocio", negocio.nombre],
+  ];
+  if (negocio.telefono) filas.push(["Teléfono", negocio.telefono, `tel:${negocio.telefono.replace(/[^\d+]/g, "")}`]);
+
+  const texto = [
+    `Hola, ${cliente.nombre}:`,
+    "",
+    `${negocio.nombre} canceló tu cita. El horario ya no está apartado a tu nombre.`,
+    "",
+    filasTexto(filas),
+    ...(datos.nota ? ["", `Mensaje de ${negocio.nombre}:`, datos.nota] : []),
+    "",
+    "Si quieres, elige otro horario aquí:",
+    datos.enlaceReservar,
+  ].join("\n");
+
+  const nota = datos.nota
+    ? `<div style="margin:0 0 20px;padding:12px 14px;background:#F4F3EF;border-radius:10px">` +
+      `<p style="margin:0 0 4px;font-size:13px;color:#5C5A52">Mensaje de ${escaparHtml(negocio.nombre)}</p>` +
+      `<p style="margin:0;white-space:pre-line;color:#1A1A18">${escaparHtml(datos.nota)}</p></div>`
+    : "";
+
+  const html = plantillaHtml(
+    titulo,
+    `<p style="margin:0 0 16px">Hola, ${escaparHtml(cliente.nombre)}: ${escaparHtml(negocio.nombre)} canceló tu cita. El horario ya no está apartado a tu nombre.</p>` +
+      `<table role="presentation" style="border-collapse:collapse;margin:0 0 20px">${filasHtml(filas)}</table>` +
+      nota +
+      `<p style="margin:0"><a href="${escaparHtml(datos.enlaceReservar)}" style="display:inline-block;background:#2B5CE6;color:#FFFFFF;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:10px">Elegir otro horario</a></p>`,
+  );
+
+  return {
+    para: cliente.correo,
+    // Responder al aviso le escribe directo al negocio.
+    responderA,
+    asunto: unaLinea(`Cita cancelada en ${negocio.nombre}: ${fecha}`),
+    texto,
+    html,
+  };
+}

@@ -4,11 +4,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  avisoCancelacionPorNegocio,
   avisoParaNegocio,
   correoParaCliente,
   escaparHtml,
   fechaDeCita,
   telefonoLegible,
+  type DatosCancelacionNegocio,
   type DatosCita,
 } from "./correos.ts";
 
@@ -94,4 +96,44 @@ test("lo que escribe el cliente no puede inyectar HTML ni cabeceras", () => {
   assert.ok(!/[\r\n]/.test(aviso.asunto), "el asunto queda en una línea");
   const cliente = correoParaCliente(malo);
   assert.ok(!cliente.html.includes("<script>"));
+});
+
+// ---------------------------------------------------------------- HU-15
+
+function cancelacion(extra: Partial<DatosCancelacionNegocio> = {}): DatosCancelacionNegocio {
+  const base = datos();
+  return {
+    negocio: base.negocio,
+    servicio: base.servicio,
+    cliente: { nombre: "Ana Ruiz", correo: "ana@correo.test" },
+    inicio: base.inicio,
+    nota: null,
+    enlaceReservar: "https://cupo.app/estetica-lupita",
+    ...extra,
+  };
+}
+
+test("HU-15: el aviso de cancelación va al cliente con fecha, negocio y enlace para reservar", () => {
+  const c = avisoCancelacionPorNegocio(cancelacion(), "hola@esteticalupita.test");
+  assert.equal(c.para, "ana@correo.test");
+  assert.equal(c.responderA, "hola@esteticalupita.test", "responder le escribe al negocio");
+  assert.equal(c.asunto, "Cita cancelada en Estética Lupita: Jueves, 29 de octubre, 10:30");
+  assert.match(c.texto, /Estética Lupita canceló tu cita/);
+  assert.match(c.texto, /Jueves, 29 de octubre, 10:30/);
+  assert.match(c.texto, /https:\/\/cupo\.app\/estetica-lupita/);
+  assert.match(c.html, /Elegir otro horario/);
+  assert.doesNotMatch(c.texto, /Mensaje de/, "sin nota no hay sección de mensaje");
+});
+
+test("HU-15: la nota del negocio aparece escapada en el HTML", () => {
+  const c = avisoCancelacionPorNegocio(cancelacion({ nota: "Me surgió una urgencia <b>perdón</b>" }));
+  assert.match(c.texto, /Mensaje de Estética Lupita:\nMe surgió una urgencia <b>perdón<\/b>/);
+  assert.match(c.html, /Me surgió una urgencia &lt;b&gt;perdón&lt;\/b&gt;/);
+  assert.doesNotMatch(c.html, /<b>perdón<\/b>/);
+});
+
+test("HU-15: el asunto del aviso es de una sola línea", () => {
+  const base = cancelacion();
+  const c = avisoCancelacionPorNegocio({ ...base, negocio: { ...base.negocio, nombre: "Uno\nDos" } });
+  assert.doesNotMatch(c.asunto, /[\r\n]/);
 });
