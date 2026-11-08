@@ -115,7 +115,7 @@ export function FormularioMarca({ inicial }: { inicial: Inicial }) {
               maxLength={7}
               spellCheck={false}
               aria-invalid={!!errores.color}
-              className={`${CAMPO} w-28 font-mono uppercase`}
+              className={`${CAMPO.replace("w-full", "w-28")} font-mono uppercase`}
             />
           </div>
           {errores.color && <p className="text-sm text-error">{errores.color}</p>}
