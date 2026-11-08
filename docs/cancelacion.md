@@ -63,3 +63,29 @@ Fuentes:
 5. **Verificar:**
    - `supabase db reset`, `supabase test db` y `npm test`.
    - En el navegador, reserva en `/estetica-lupita`, copia el enlace de la confirmación, ábrelo, cancela, y comprueba que el horario vuelva a aparecer libre.
+
+# Cancelación por el negocio (HU-15)
+
+El negocio puede cancelar una cita confirmada que todavía no empieza desde su agenda (**Panel → Agenda → Cancelar cita**). El cliente recibe un correo con la fecha que tenía, un mensaje opcional del negocio y un botón para elegir otro horario.
+
+## Qué hace cada parte
+
+| Parte | Para qué sirve | Por qué así |
+| --- | --- | --- |
+| `cancelar_cita_negocio(cita_id)` (SQL) | Pasa la cita a `cancelada` y regresa nombre, correo, servicio y duración para el correo | Corre como quien llama (`security invoker`): RLS hace que el negocio solo encuentre sus citas. Una cita de otro negocio da el mismo error que una que no existe |
+| `lib/cancelacion.ts` | Traduce los códigos de error y valida la nota opcional (300 caracteres) | Sin dependencias, probado con `node --test` |
+| `lib/correos.ts` (`avisoCancelacionPorNegocio`) | Arma el correo al cliente | Mismo formato que los correos de HU-12; la nota se escapa en el HTML |
+| `app/panel/actions.ts` | Server Action que llama a la función y manda el correo con `after()` | La agenda se actualiza sin esperar al servidor de correo |
+| `app/panel/cancelar-cita.tsx` | Botón con confirmación dentro de la tarjeta | Evita cancelar por un toque accidental, sin ventanas del navegador |
+
+## Decisiones
+
+1. **Misma regla que HU-13:** solo se cancela una cita confirmada y futura. La cita no se borra y el horario se libera solo.
+2. **`for update`** en la función: si el negocio y el cliente cancelan al mismo tiempo, el segundo ve `cita_ya_cancelada` y no hay dos cambios ni dos correos.
+3. **La nota no se guarda.** Es un mensaje para el cliente y solo viaja en el correo; así no se acumulan datos que nadie consulta.
+4. **Responder al correo le escribe al negocio** (correo de contacto o, si no hay, el de su cuenta).
+
+## Cómo se probó
+
+- `supabase/tests/database/07_cancelar_por_negocio.test.sql`: 20 pruebas pgTAP. Cubren sin sesión, cita de otro negocio, cita inexistente, cita pasada, doble cancelación, los datos que regresa, que el horario se libere y se pueda volver a reservar, y que la cita no se borre.
+- `lib/cancelacion.test.ts` y `lib/correos.test.ts`: códigos de error, nota opcional y contenido del correo.
