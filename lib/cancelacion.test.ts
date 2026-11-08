@@ -5,7 +5,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   CODIGOS_CANCELACION,
+  CODIGOS_CANCELACION_NEGOCIO,
+  NOTA_MAX,
   codigoDeCancelacion,
+  codigoDeCancelacionNegocio,
+  mensajeDeCancelacionNegocio,
+  validarNota,
   esTokenValido,
   estadoDeCita,
   mensajeDeCancelacion,
@@ -48,4 +53,29 @@ test("errores ajenos o vacíos son desconocidos", () => {
   assert.equal(codigoDeCancelacion({ message: "connection refused" }), "desconocido");
   assert.equal(codigoDeCancelacion({ message: "token_invalido y algo más" }), "desconocido");
   assert.match(mensajeDeCancelacion("desconocido"), /Intenta de nuevo/);
+});
+
+// ---------------------------------------------------------------- HU-15
+
+test("HU-15: cada código de cancelar_cita_negocio se reconoce y tiene mensaje", () => {
+  for (const codigo of CODIGOS_CANCELACION_NEGOCIO) {
+    assert.equal(codigoDeCancelacionNegocio({ message: codigo }), codigo);
+    assert.ok(mensajeDeCancelacionNegocio(codigo).length > 0);
+  }
+  assert.equal(codigoDeCancelacionNegocio(null), "desconocido");
+  assert.equal(codigoDeCancelacionNegocio({ message: "permission denied" }), "desconocido");
+  assert.match(mensajeDeCancelacionNegocio("desconocido"), /Intenta de nuevo/);
+});
+
+test("HU-15: la nota para el cliente es opcional y tiene límite", () => {
+  assert.deepEqual(validarNota(undefined), { ok: true, nota: null });
+  assert.deepEqual(validarNota("   "), { ok: true, nota: null });
+  assert.deepEqual(validarNota("  Me surgió una urgencia.\r\nPerdón.  "), {
+    ok: true,
+    nota: "Me surgió una urgencia.\nPerdón.",
+  });
+  assert.equal(validarNota("ñ".repeat(NOTA_MAX)).ok, true, "cuenta caracteres, no bytes");
+  const larga = validarNota("a".repeat(NOTA_MAX + 1));
+  assert.equal(larga.ok, false);
+  if (!larga.ok) assert.match(larga.error, /300/);
 });

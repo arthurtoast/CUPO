@@ -47,3 +47,49 @@ export function codigoDeCancelacion(
 export function mensajeDeCancelacion(codigo: CodigoCancelacion): string {
   return MENSAJES[codigo];
 }
+
+// ---------------------------------------------------------------------------
+// HU-15: el negocio cancela desde su agenda (cancelar_cita_negocio)
+// ---------------------------------------------------------------------------
+
+export const CODIGOS_CANCELACION_NEGOCIO = [
+  "sin_sesion",
+  "cita_no_encontrada",
+  "cita_ya_cancelada",
+  "cita_pasada",
+] as const;
+
+export type CodigoCancelacionNegocio = (typeof CODIGOS_CANCELACION_NEGOCIO)[number] | "desconocido";
+
+const MENSAJES_NEGOCIO: Record<CodigoCancelacionNegocio, string> = {
+  sin_sesion: "Tu sesión expiró. Vuelve a entrar.",
+  cita_no_encontrada: "No encontramos esa cita en tu agenda.",
+  cita_ya_cancelada: "Esta cita ya estaba cancelada.",
+  cita_pasada: "Esta cita ya empezó o ya pasó, así que no se puede cancelar.",
+  desconocido: "No pudimos cancelar la cita. Intenta de nuevo.",
+};
+
+export function codigoDeCancelacionNegocio(
+  error: { message?: string } | null | undefined,
+): CodigoCancelacionNegocio {
+  const mensaje = (error?.message ?? "").trim();
+  return CODIGOS_CANCELACION_NEGOCIO.find((c) => c === mensaje) ?? "desconocido";
+}
+
+export function mensajeDeCancelacionNegocio(codigo: CodigoCancelacionNegocio): string {
+  return MENSAJES_NEGOCIO[codigo];
+}
+
+// Nota opcional que el negocio le escribe al cliente ("me surgió una urgencia").
+// Solo va en el correo; no se guarda.
+export const NOTA_MAX = 300;
+
+export function validarNota(
+  valor: unknown,
+): { ok: true; nota: string | null } | { ok: false; error: string } {
+  const nota = typeof valor === "string" ? valor.replace(/\r\n?/g, "\n").trim() : "";
+  if ([...nota].length > NOTA_MAX) {
+    return { ok: false, error: `El mensaje para tu cliente puede tener hasta ${NOTA_MAX} caracteres.` };
+  }
+  return { ok: true, nota: nota || null };
+}
