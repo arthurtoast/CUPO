@@ -177,6 +177,8 @@ async function ListaCitas() {
 // El origen sale de los headers del request para que el enlace sirva igual en
 // local (localhost:3000) que en producción.
 async function EnlacePublico() {
+  // La sesión de Supabase usa la hora actual: se lee en cada request.
+  await connection();
   const [encabezados, supabase] = await Promise.all([headers(), createClient()]);
   const { data } = await supabase.auth.getClaims();
   const { data: negocio } = await supabase
