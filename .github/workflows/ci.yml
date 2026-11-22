@@ -22,3 +22,31 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # T-13 · Pruebas contra Supabase levantado de verdad: pgTAP (186 pruebas de
+  # esquema, RLS, Storage y funciones), la integración del flujo de reserva por
+  # la API pública y la prueba de concurrencia de reservar_cita.
+  base-de-datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Solo los servicios que usan las pruebas: Postgres, Auth, REST, Storage.
+      - name: Levantar Supabase local
+        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Pruebas pgTAP
+        run: npx supabase test db
+      - name: Exportar URL y llave de Supabase
+        run: npx supabase status -o env | grep -E '^[A-Z_]+=' | sed -E 's/="(.*)"$/=\1/' >> "$GITHUB_ENV"
+      - name: Prueba de integración del flujo de reserva
+        run: npm run test:integracion
+      - name: Prueba de concurrencia
+        run: npm run test:concurrencia
+      - name: Detener Supabase
+        if: always()
+        run: npx supabase stop --no-backup
