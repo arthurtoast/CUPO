@@ -4,6 +4,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
+-- Desde marzo de 2026 Supabase Storage bloquea los DELETE por SQL directo salvo
+-- con esta variable, que su API activa sola. Aquí se activa para probar las
+-- políticas de borrado como si llegaran por la API.
+set local storage.allow_delete_query to 'true';
 
 select plan(22);
 
