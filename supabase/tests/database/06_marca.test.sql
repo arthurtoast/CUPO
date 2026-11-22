@@ -17,8 +17,11 @@ select is((select allowed_mime_types from storage.buckets where id = 'logos'),
           'el bucket solo acepta PNG, JPG y WEBP');
 select policies_are('storage', 'objects',
                     array['logos_ver_los_mios', 'logos_subir_a_mi_carpeta',
-                          'logos_reemplazar_los_mios', 'logos_borrar_los_mios'],
-                    'storage.objects tiene las cuatro políticas de logos');
+                          'logos_reemplazar_los_mios', 'logos_borrar_los_mios',
+                          -- HU-16 agrega las mismas cuatro para el bucket portadas
+                          'portadas_ver_las_mias', 'portadas_subir_a_mi_carpeta',
+                          'portadas_reemplazar_las_mias', 'portadas_borrar_las_mias'],
+                    'storage.objects tiene las políticas de logos y portadas');
 
 -- Dos negocios
 insert into auth.users (id, email) values
