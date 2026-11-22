@@ -183,6 +183,17 @@ La cita guarda una copia de los datos del cliente porque el cliente no tiene cue
    npm run dev
    ```
 
+## Pruebas
+
+| Comando | Qué prueba | Necesita Supabase local |
+| --- | --- | --- |
+| `npm test` | Lógica pura de `lib/`: huecos, validaciones, marca, correos | No |
+| `npx supabase test db` | pgTAP: esquema, RLS, Storage y funciones de la base | Sí |
+| `npm run test:integracion` | Flujo de un visitante por la API pública: ver horarios, reservar, choque de horario, cancelar con el enlace | Sí, con la semilla |
+| `npm run test:concurrencia` | 20 reservas simultáneas del mismo horario: solo una gana | Sí, con la semilla y `psql` |
+
+Para las tres últimas: `npx supabase start` y `npx supabase db reset`. El CI corre todas en cada PR: `lint-y-build` con lo que no necesita base, y `base-de-datos` levanta Supabase en GitHub Actions para el resto.
+
 ## Forma de trabajo
 
 - Scrum: el backlog vive en GitHub Issues y en el Project "Cupo — Backlog", con las columnas Backlog, Sprint, En progreso y Listo.

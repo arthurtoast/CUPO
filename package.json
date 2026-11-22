@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\"",
-    "test:concurrencia": "bash supabase/tests/concurrencia.sh"
+    "test:concurrencia": "bash supabase/tests/concurrencia.sh",
+    "test:integracion": "node --env-file-if-exists=.env.local --test --experimental-strip-types \"tests/integracion/*.test.ts\""
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
