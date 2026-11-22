@@ -53,7 +53,7 @@ Fechas y horas absolutas en `timestamptz` (UTC). La interfaz las muestra con `ne
 
 | Vista | Columnas |
 | --- | --- |
-| `vista_marca` | `id, slug, nombre, descripcion, logo_url, color_acento, telefono_publico, direccion, zona_horaria` |
+| `vista_marca` | `id, slug, nombre, descripcion, logo_url, color_acento, telefono_publico, direccion, zona_horaria, portada_url, bienvenida, instagram, facebook, whatsapp` (las últimas cinco desde HU-16) |
 | `vista_servicio` | `id, negocio_id, nombre, duracion_min, creado_en` (solo activos) |
 | `vista_horario` | `negocio_id, dia_semana, hora_inicio, hora_fin` |
 | `vista_ocupado` | `negocio_id, inicio, fin` de citas confirmadas y bloqueos que aún no terminan |

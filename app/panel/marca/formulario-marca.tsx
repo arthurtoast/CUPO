@@ -11,6 +11,13 @@ import {
   acentoPocoLegible,
   normalizarColor,
 } from "@/lib/marca";
+import {
+  BIENVENIDA_MAX,
+  normalizarFacebook,
+  normalizarInstagram,
+  normalizarWhatsapp,
+  whatsappParaEditar,
+} from "@/lib/personalizacion";
 import { guardarMarca, type EstadoMarca } from "./actions";
 
 const estadoInicial: EstadoMarca = {};
@@ -28,10 +35,15 @@ type Inicial = {
   descripcion: string | null;
   telefono: string | null;
   direccion: string | null;
+  portadaUrl: string | null;
+  bienvenida: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
 };
 
-// HU-06 (color) y HU-07 (descripción y contacto), con vista previa del
-// encabezado tal como lo verá el cliente.
+// HU-06 (color), HU-07 (descripción y contacto) y HU-16 (bienvenida y redes),
+// con vista previa del encabezado tal como lo verá el cliente.
 export function FormularioMarca({ inicial }: { inicial: Inicial }) {
   const [estado, accion, pendiente] = useActionState(guardarMarca, estadoInicial);
   const [editado, setEditado] = useState(false);
@@ -41,6 +53,10 @@ export function FormularioMarca({ inicial }: { inicial: Inicial }) {
     descripcion: inicial.descripcion ?? "",
     telefono: inicial.telefono ?? "",
     direccion: inicial.direccion ?? "",
+    bienvenida: inicial.bienvenida ?? "",
+    instagram: inicial.instagram ? `@${inicial.instagram}` : "",
+    facebook: inicial.facebook ?? "",
+    whatsapp: whatsappParaEditar(inicial.whatsapp),
   });
 
   const errores = estado.errores ?? {};
@@ -70,6 +86,12 @@ export function FormularioMarca({ inicial }: { inicial: Inicial }) {
     descripcion: datos.descripcion.trim() || null,
     telefono: datos.telefono.trim() || null,
     direccion: datos.direccion.trim() || null,
+    portadaUrl: inicial.portadaUrl,
+    bienvenida: datos.bienvenida.replace(/\s+/g, " ").trim() || null,
+    // Mientras el valor no sea válido, la vista previa no muestra esa red.
+    instagram: normalizarInstagram(datos.instagram),
+    facebook: normalizarFacebook(datos.facebook),
+    whatsapp: normalizarWhatsapp(datos.whatsapp),
   };
 
   return (
@@ -180,6 +202,80 @@ export function FormularioMarca({ inicial }: { inicial: Inicial }) {
             {errores.direccion && <p className="text-sm text-error">{errores.direccion}</p>}
           </div>
         </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="bienvenida" className="text-[13px] font-medium">Mensaje de bienvenida</label>
+          <input
+            id="bienvenida"
+            name="bienvenida"
+            maxLength={BIENVENIDA_MAX}
+            value={datos.bienvenida}
+            onChange={cambiar("bienvenida")}
+            placeholder="Por ejemplo: Gracias por elegirnos. Llega 10 minutos antes de tu cita."
+            aria-invalid={!!errores.bienvenida}
+            aria-describedby="contador-bienvenida"
+            className={CAMPO}
+          />
+          <p id="contador-bienvenida" className="text-right text-xs text-tinta-suave">
+            {[...datos.bienvenida].length}/{BIENVENIDA_MAX} · Aparece antes de tus horarios
+          </p>
+          {errores.bienvenida && <p className="text-sm text-error">{errores.bienvenida}</p>}
+        </div>
+
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-1 text-[13px] font-medium">Redes sociales</legend>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="instagram" className="text-[13px] text-tinta-suave">Instagram</label>
+              <input
+                id="instagram"
+                name="instagram"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={datos.instagram}
+                onChange={cambiar("instagram")}
+                placeholder="@tu.negocio"
+                aria-invalid={!!errores.instagram}
+                className={CAMPO}
+              />
+              {errores.instagram && <p className="text-sm text-error">{errores.instagram}</p>}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="facebook" className="text-[13px] text-tinta-suave">Facebook</label>
+              <input
+                id="facebook"
+                name="facebook"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={datos.facebook}
+                onChange={cambiar("facebook")}
+                placeholder="facebook.com/tunegocio"
+                aria-invalid={!!errores.facebook}
+                className={CAMPO}
+              />
+              {errores.facebook && <p className="text-sm text-error">{errores.facebook}</p>}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="whatsapp" className="text-[13px] text-tinta-suave">WhatsApp</label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                inputMode="tel"
+                value={datos.whatsapp}
+                onChange={cambiar("whatsapp")}
+                placeholder="81 1234 5678"
+                aria-invalid={!!errores.whatsapp}
+                className={CAMPO}
+              />
+              {errores.whatsapp && <p className="text-sm text-error">{errores.whatsapp}</p>}
+            </div>
+          </div>
+          <p className="text-xs text-tinta-suave">Solo se muestran las que llenes.</p>
+        </fieldset>
+
         <p className="-mt-2 text-xs text-tinta-suave">
           Todo es opcional. Lo que escribas aquí lo ve cualquiera que abra tu enlace.
         </p>

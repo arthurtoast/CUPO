@@ -16,6 +16,12 @@ export type Marca = {
   telefono_publico: string | null;
   direccion: string | null;
   zona_horaria: string;
+  // HU-16
+  portada_url: string | null;
+  bienvenida: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
 };
 
 export type Servicio = {
@@ -37,7 +43,7 @@ export const leerMarca = cache(async (slug: string): Promise<Marca | null> => {
   const { data, error } = await supabase
     .from("vista_marca")
     .select(
-      "id, slug, nombre, descripcion, logo_url, color_acento, telefono_publico, direccion, zona_horaria",
+      "id, slug, nombre, descripcion, logo_url, color_acento, telefono_publico, direccion, zona_horaria, portada_url, bienvenida, instagram, facebook, whatsapp",
     )
     .eq("slug", slug)
     .maybeSingle();
