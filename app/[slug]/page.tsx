@@ -76,6 +76,11 @@ async function Reserva({ params }: { params: PageProps<"/[slug]">["params"] }) {
           logoUrl: marca.logo_url,
           telefono: marca.telefono_publico,
           direccion: marca.direccion,
+          portadaUrl: marca.portada_url,
+          bienvenida: marca.bienvenida,
+          instagram: marca.instagram,
+          facebook: marca.facebook,
+          whatsapp: marca.whatsapp,
         }}
         servicio={servicio}
         zonaHoraria={marca.zona_horaria}
