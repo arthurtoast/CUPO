@@ -6,9 +6,11 @@ import { Suspense } from "react";
 import { MensajeError } from "@/components/formulario";
 import { enlacePublico, enlaceVisible, origenDesdeHeaders } from "@/lib/enlace";
 import { agruparPorDia, claveDia, etiquetaDia, formatearHora } from "@/lib/fechas";
+import { esClaveValida } from "@/lib/semana";
 import { createClient } from "@/lib/supabase/server";
 import { BotonCopiar } from "./boton-copiar";
 import { CancelarCita } from "./cancelar-cita";
+import { AgendaSemanal } from "./semana";
 
 export const metadata: Metadata = { title: "Agenda · Cupo" };
 
@@ -220,18 +222,54 @@ async function EnlacePublico() {
   );
 }
 
-export default function Panel() {
+// HU-19: la agenda se ve como lista (HU-14) o como semana. La vista y la semana
+// viven en la URL para que el botón de atrás y recargar funcionen.
+function SelectorVista({ semanal }: { semanal: boolean }) {
+  const clase = (activa: boolean) =>
+    `flex min-h-11 items-center rounded-[8px] px-4 text-sm ${
+      activa ? "bg-superficie font-semibold text-tinta shadow-sm" : "text-tinta-suave hover:text-tinta"
+    }`;
+  return (
+    <nav aria-label="Vista de la agenda" className="flex w-fit gap-1 rounded-[10px] bg-[#efede6] p-1">
+      <Link href="/panel" aria-current={!semanal ? "page" : undefined} className={clase(!semanal)}>
+        Lista
+      </Link>
+      <Link
+        href="/panel?vista=semana"
+        aria-current={semanal ? "page" : undefined}
+        className={clase(semanal)}
+      >
+        Semana
+      </Link>
+    </nav>
+  );
+}
+
+export default async function Panel({
+  searchParams,
+}: {
+  searchParams: Promise<{ vista?: string | string[]; semana?: string | string[] }>;
+}) {
+  const parametros = await searchParams;
+  const semanal = parametros.vista === "semana";
+  const semana = typeof parametros.semana === "string" && esClaveValida(parametros.semana)
+    ? parametros.semana
+    : undefined;
+
   return (
     <>
       <div className="flex flex-col gap-1.5">
         <h1 className="font-display text-[28px] font-bold tracking-tight">Agenda</h1>
-        <p className="text-[15px] text-tinta-suave">Tus citas de hoy en adelante.</p>
+        <p className="text-[15px] text-tinta-suave">
+          {semanal ? "Tus citas de la semana." : "Tus citas de hoy en adelante."}
+        </p>
       </div>
       <Suspense fallback={null}>
         <EnlacePublico />
       </Suspense>
+      <SelectorVista semanal={semanal} />
       <Suspense fallback={<p className="text-sm text-tinta-suave">Cargando tu agenda…</p>}>
-        <ListaCitas />
+        {semanal ? <AgendaSemanal semana={semana} /> : <ListaCitas />}
       </Suspense>
     </>
   );
