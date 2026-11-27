@@ -23,6 +23,7 @@ type Cita = {
   telefono_cliente: string;
   estado: "confirmada" | "cancelada";
   servicio: { nombre: string } | null;
+  staff: { nombre: string } | null; // HU-18: con quién es la cita
 };
 
 // El teléfono se guarda solo con dígitos; los de 10 se leen como 81 1234 5678.
@@ -65,6 +66,7 @@ function TarjetaCita({ cita, zona, ahora }: { cita: Cita; zona: string; ahora: D
         </div>
         <span className="text-[13px] text-tinta-suave">
           {cita.servicio?.nombre ?? "Servicio"} · {duracion} min
+          {cita.staff ? ` · con ${cita.staff.nombre}` : ""}
         </span>
         <div className="flex flex-wrap gap-x-5 text-[13px]">
           <a
@@ -106,7 +108,7 @@ async function ListaCitas() {
     supabase
       .from("cita")
       .select(
-        "id, inicio, fin, nombre_cliente, correo_cliente, telefono_cliente, estado, servicio(nombre)",
+        "id, inicio, fin, nombre_cliente, correo_cliente, telefono_cliente, estado, servicio(nombre), staff:staff!cita_staff_del_negocio(nombre)",
       )
       .gte("inicio", desde.toISOString())
       .order("inicio"),

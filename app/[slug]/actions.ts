@@ -48,6 +48,10 @@ export async function reservar(
 ): Promise<EstadoReserva> {
   const slug = String(formData.get("slug") ?? "");
   const servicioId = String(formData.get("servicio_id") ?? "");
+  // HU-18: con quién. La base exige uno válido si el negocio tiene staff y lo
+  // ignora si no tiene.
+  const staffTexto = String(formData.get("staff_id") ?? "");
+  const staffId = UUID.test(staffTexto) ? staffTexto : null;
   const inicio = String(formData.get("inicio") ?? "");
 
   if (!inicio || Number.isNaN(Date.parse(inicio))) {
@@ -73,6 +77,7 @@ export async function reservar(
       p_correo: correo,
       p_telefono: telefono,
       p_servicio_id: UUID.test(servicioId) ? servicioId : null,
+      p_staff_id: staffId,
     })
     .single<{ cita_id: string; token_cancelacion: string; inicio: string; fin: string }>();
 
@@ -81,6 +86,7 @@ export async function reservar(
     if (codigo === "desconocido") {
       console.error("reservar_cita falló", error);
     }
+    if (codigo === "staff_invalido") refresh();                                  // aporta: HU-18, vuelve a pedir la lista de staff (quitaron a esa persona)
     if (ERRORES_DE_HORARIO.has(codigo)) {
       // Vuelve a pedir la página para que el hueco aparezca ocupado.
       refresh();
@@ -101,6 +107,7 @@ export async function reservar(
     notificarCitaNueva({
       slug,
       servicioId: servicio,
+      staffId,
       inicio: data.inicio,
       cliente: { nombre, correo, telefono },
       enlaceCancelar,

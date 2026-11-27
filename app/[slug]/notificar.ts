@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export type CitaNueva = {
   slug: string;
   servicioId: string | null;
+  staffId: string | null; // HU-18: con quién es la cita (null si el negocio no tiene staff)
   inicio: string;
   cliente: { nombre: string; correo: string; telefono: string };
   enlaceCancelar: string;
@@ -41,6 +42,18 @@ export async function notificarCitaNueva(cita: CitaNueva): Promise<void> {
       throw new Error(`servicio: ${errorServicio?.message ?? "no encontrado"}`);
     }
 
+    // HU-18: el nombre se lee de la vista pública, no del formulario del cliente.
+    let staff: string | null = null;
+    if (cita.staffId) {
+      const { data } = await supabase
+        .from("vista_staff")
+        .select("nombre")
+        .eq("id", cita.staffId)
+        .eq("negocio_id", marca.id)
+        .maybeSingle();
+      staff = data?.nombre ?? null;
+    }
+
     const datos: DatosCita = {
       negocio: {
         nombre: marca.nombre,
@@ -49,6 +62,7 @@ export async function notificarCitaNueva(cita: CitaNueva): Promise<void> {
         zonaHoraria: marca.zona_horaria,
       },
       servicio: { nombre: servicio.nombre, duracionMin: servicio.duracion_min },
+      staff,
       cliente: cita.cliente,
       inicio: cita.inicio,
       enlaceCancelar: cita.enlaceCancelar,

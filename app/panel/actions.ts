@@ -56,13 +56,19 @@ export async function cancelarCitaNegocio(
     return { tipo: "error", mensaje: mensajeDeCancelacionNegocio(codigo) };
   }
 
-  const [{ data: claims }, { data: negocio }, encabezados] = await Promise.all([
+  const [{ data: claims }, { data: negocio }, encabezados, { data: conStaff }] = await Promise.all([
     supabase.auth.getClaims(),
     supabase
       .from("negocio")
       .select("nombre, slug, zona_horaria, telefono_publico, direccion, correo_contacto")
       .maybeSingle(),
     headers(),
+    // HU-18: con quién era la cita, para decirlo en el correo.
+    supabase
+      .from("cita")
+      .select("staff:staff!cita_staff_del_negocio(nombre)")
+      .eq("id", citaId)
+      .maybeSingle<{ staff: { nombre: string } | null }>(),
   ]);
 
   if (negocio) {
@@ -76,6 +82,7 @@ export async function cancelarCitaNegocio(
           zonaHoraria: negocio.zona_horaria,
         },
         servicio: { nombre: data.servicio_nombre, duracionMin: data.duracion_min },
+        staff: conStaff?.staff?.nombre ?? null,
         cliente: { nombre: data.nombre_cliente, correo: data.correo_cliente },
         inicio: data.inicio,
         nota: validacion.nota,
