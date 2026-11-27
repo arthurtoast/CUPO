@@ -70,16 +70,22 @@ create view public.vista_staff as
 comment on view public.vista_staff is
   'Staff activo de cada negocio para que el cliente elija con quién. Solo el nombre.';
 
--- staff_id va al final porque create or replace view solo puede agregar
--- columnas. Los bloqueos no tienen staff: aplican a todos.
+-- staff_id y bloqueo van al final porque create or replace view solo puede
+-- agregar columnas. Los bloqueos aplican a todo el staff; `bloqueo` los separa
+-- de las citas sin staff (staff_id nulo), que solo ocupan el carril sin staff,
+-- igual que en la restricción cita_sin_traslape.
 create or replace view public.vista_ocupado as
-  select negocio_id, inicio, fin, staff_id
+  select negocio_id, inicio, fin, staff_id, false as bloqueo
   from public.cita
   where estado = 'confirmada' and fin > pg_catalog.now()
   union all
-  select negocio_id, inicio, fin, null::uuid
+  select negocio_id, inicio, fin, null::uuid, true
   from public.bloqueo
   where fin > pg_catalog.now();
+
+comment on view public.vista_ocupado is
+  'Citas confirmadas y bloqueos futuros, sin datos de quién reservó ni motivo. '
+  'staff_id: con quién es la cita (nulo = sin staff). bloqueo: true si aplica a todo el negocio.';
 
 revoke all on table public.vista_staff from public, anon, authenticated;
 grant select on table public.vista_staff to anon, authenticated;
@@ -138,8 +144,7 @@ begin
     raise exception 'servicio_invalido' using errcode = 'P0001';
   end if;
 
-  -- 3. Datos del cliente (mismas reglas que los CHECK de la tabla, con mensaje claro)
-  -- HU-18: si el negocio registró staff, la cita es con una persona activa de
+  -- 3. Con quién (HU-18): si el negocio registró staff, la cita es con una persona activa de
   -- ese negocio; si no tiene staff, se ignora p_staff_id y todo sigue como antes.
   if exists (select 1 from public.staff st where st.negocio_id = v_negocio.id and st.activo) then
     select st.id into v_staff_id from public.staff st
@@ -149,6 +154,7 @@ begin
     end if;
   end if;
 
+  -- 3b. Datos del cliente (mismas reglas que los CHECK de la tabla, con mensaje claro)
   if pg_catalog.char_length(v_nombre) not between 1 and 120
      or v_correo !~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'
      or v_telefono !~ '^[0-9]{10,15}$' then

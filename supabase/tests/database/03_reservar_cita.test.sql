@@ -8,10 +8,10 @@ set local search_path = public, extensions;
 select plan(20);
 
 select has_function('public', 'reservar_cita',
-                    array['text', 'timestamp with time zone', 'text', 'text', 'text', 'uuid'],
+                    array['text', 'timestamp with time zone', 'text', 'text', 'text', 'uuid', 'uuid'],
                     'existe reservar_cita');
 select is_definer('public', 'reservar_cita',
-                  array['text', 'timestamp with time zone', 'text', 'text', 'text', 'uuid'],
+                  array['text', 'timestamp with time zone', 'text', 'text', 'text', 'uuid', 'uuid'],
                   'reservar_cita corre con permisos del dueño (security definer)');
 
 -- Negocio de prueba: lunes a viernes 09:00-14:00, servicio de 45 min
