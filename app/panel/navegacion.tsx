@@ -7,6 +7,7 @@ const ENLACES = [
   { href: "/panel", texto: "Agenda" },
   { href: "/panel/disponibilidad", texto: "Disponibilidad" },
   { href: "/panel/bloqueos", texto: "Bloqueos" },
+  { href: "/panel/equipo", texto: "Equipo" },                                       // aporta: HU-18, alta y baja del staff
   { href: "/panel/marca", texto: "Mi página" },
 ] as const;
 

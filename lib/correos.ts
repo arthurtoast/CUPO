@@ -13,6 +13,7 @@ export type DatosCita = {
     zonaHoraria: string;
   };
   servicio: { nombre: string; duracionMin: number };
+  staff?: string | null; // HU-18: con quién es la cita; ausente si el negocio no tiene staff
   cliente: { nombre: string; correo: string; telefono: string };
   inicio: string; // ISO 8601
   enlaceCancelar: string;
@@ -68,6 +69,11 @@ function unaLinea(texto: string): string {
 
 type Fila = [etiqueta: string, valor: string, enlace?: string];
 
+// HU-18: fila "Con" solo cuando la cita es con alguien del staff.
+function filaStaff(datos: { staff?: string | null }): Fila[] {
+  return datos.staff ? [["Con", datos.staff]] : [];
+}
+
 function filasTexto(filas: Fila[]): string {
   return filas.map(([etiqueta, valor]) => `${etiqueta}: ${valor}`).join("\n");
 }
@@ -109,6 +115,7 @@ export function correoParaCliente(datos: DatosCita, responderA: string | null = 
   const filas: Fila[] = [
     ["Cuándo", fecha],
     ["Servicio", `${servicio.nombre} · ${servicio.duracionMin} min`],
+    ...filaStaff(datos),
     ["Negocio", negocio.nombre],
   ];
   if (negocio.direccion) filas.push(["Dirección", negocio.direccion]);
@@ -154,6 +161,7 @@ export function avisoParaNegocio(datos: DatosCita, para: string): Correo {
   const filas: Fila[] = [
     ["Cuándo", fecha],
     ["Servicio", `${servicio.nombre} · ${servicio.duracionMin} min`],
+    ...filaStaff(datos),
     ["Cliente", cliente.nombre],
     ["Correo", cliente.correo, `mailto:${cliente.correo}`],
     ["Teléfono", telefono, `tel:${cliente.telefono}`],
@@ -191,6 +199,7 @@ export function avisoParaNegocio(datos: DatosCita, para: string): Correo {
 export type DatosCancelacionNegocio = {
   negocio: DatosCita["negocio"];
   servicio: DatosCita["servicio"];
+  staff?: string | null; // HU-18: con quién era la cita
   cliente: { nombre: string; correo: string };
   inicio: string; // ISO 8601
   nota: string | null; // mensaje opcional del negocio
@@ -208,6 +217,7 @@ export function avisoCancelacionPorNegocio(
   const filas: Fila[] = [
     ["Cuándo era", fecha],
     ["Servicio", `${servicio.nombre} · ${servicio.duracionMin} min`],
+    ...filaStaff(datos),
     ["Negocio", negocio.nombre],
   ];
   if (negocio.telefono) filas.push(["Teléfono", negocio.telefono, `tel:${negocio.telefono.replace(/[^\d+]/g, "")}`]);

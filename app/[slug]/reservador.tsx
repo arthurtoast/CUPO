@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { BotonCopiar } from "@/app/panel/boton-copiar";
 import { EncabezadoNegocio, type MarcaVisible } from "@/components/encabezado-negocio";
 import { Campo, MensajeError } from "@/components/formulario";
 import type { Dia, Hueco } from "@/lib/huecos";
 import { ERRORES_DE_HORARIO, NOMBRE_MAX } from "@/lib/reserva";
+import type { MiembroStaff } from "@/lib/staff";
 import { reservar, type EstadoReserva } from "./actions";
 
 type Props = {
@@ -14,6 +16,8 @@ type Props = {
   servicio: { id: string; nombre: string; duracion_min: number } | null;
   zonaHoraria: string;
   dias: Dia[];
+  staff: MiembroStaff[]; // HU-18: staff activo; vacío si el negocio no tiene
+  elegido: MiembroStaff | null; // con quién se están viendo los horarios
 };
 
 const estadoInicial: EstadoReserva = { tipo: "inicial" };
@@ -51,7 +55,7 @@ const libres = (dia: Dia) => dia.huecos.filter((h) => h.libre).length;
 
 // ---------------------------------------------------------------------------
 
-export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) {
+export function Reservador({ slug, marca, servicio, zonaHoraria, dias, staff, elegido }: Props) {
   const [estado, accion, enviando] = useActionState(reservar, estadoInicial);
   const [fechaElegida, setFechaElegida] = useState<string | null>(null);
   const [inicioElegido, setInicioElegido] = useState<string | null>(null);
@@ -79,6 +83,7 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) 
           zonaHoraria={zonaHoraria}
           duracion={servicio?.duracion_min}
           nombre={marca.nombre}
+          con={elegido?.nombre ?? null}
           telefono={marca.telefono}
           direccion={marca.direccion}
           slug={slug}
@@ -135,15 +140,18 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) 
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col">
       {encabezado}
 
+      <SelectorStaff staff={staff} elegido={elegido} />
+
       <form action={accion} className="flex flex-1 flex-col">
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="servicio_id" value={servicio.id} />
+        {elegido && <input type="hidden" name="staff_id" value={elegido.id} />}
         <input type="hidden" name="inicio" value={hueco?.inicio ?? ""} />
 
         <div className="flex flex-1 flex-col gap-7 px-5 py-6">
           {!dia ? (
             <Aviso>
-              No hay horarios libres en los próximos {dias.length} días.
+              No hay horarios libres{elegido ? ` con ${elegido.nombre}` : ""} en los próximos {dias.length} días.
               {marca.telefono ? ` Puedes llamar al ${marca.telefono}.` : ""}
             </Aviso>
           ) : (
@@ -284,7 +292,9 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias }: Props) 
                   <p className="font-semibold">
                     {diaCorto(dia.fecha)} {numeroDia(dia.fecha)} · {hueco.hora}
                   </p>
-                  <p className="text-sm text-tinta-suave">{servicio.duracion_min} min</p>
+                  <p className="text-sm text-tinta-suave">
+                    {servicio.duracion_min} min{elegido ? ` · con ${elegido.nombre}` : ""}
+                  </p>
                 </>
               ) : (
                 <p className="text-sm text-tinta-suave">Elige una hora</p>
@@ -353,11 +363,46 @@ function Aviso({ children }: { children: React.ReactNode }) {
   );
 }
 
+// HU-18: con quién. Cada persona es un enlace (?con=<id>): la página se vuelve a
+// calcular en el servidor con los horarios libres de esa persona.
+function SelectorStaff({ staff, elegido }: { staff: MiembroStaff[]; elegido: MiembroStaff | null }) {
+  if (staff.length === 0 || !elegido) return null;
+  return (
+    <nav aria-labelledby="titulo-staff" className="border-b border-borde px-5 pt-6 pb-1">
+      <h2 id="titulo-staff" className="mb-3 text-sm font-semibold uppercase tracking-wide text-tinta-suave">
+        ¿Con quién?
+      </h2>
+      <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-5">
+        {staff.map((m) => {
+          const actual = m.id === elegido.id;
+          return (
+            <Link
+              key={m.id}
+              href={{ query: { con: m.id } }}
+              scroll={false}
+              replace
+              aria-current={actual ? "true" : undefined}
+              className={`flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium ${
+                actual
+                  ? "border-[var(--acento)] bg-[var(--acento)] text-white"
+                  : "border-borde-control bg-superficie"
+              }`}
+            >
+              {m.nombre}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 function Confirmacion({
   inicio,
   zonaHoraria,
   duracion,
   nombre,
+  con,
   telefono,
   direccion,
   slug,
@@ -368,6 +413,7 @@ function Confirmacion({
   zonaHoraria: string;
   duracion?: number;
   nombre: string;
+  con: string | null;
   telefono: string | null;
   direccion: string | null;
   slug: string;
@@ -387,6 +433,7 @@ function Confirmacion({
         <p className="text-tinta-suave">
           {nombre}
           {duracion ? ` · ${duracion} min` : ""}
+          {con ? ` · con ${con}` : ""}
         </p>
         {direccion && <p className="text-tinta-suave">{direccion}</p>}
       </div>

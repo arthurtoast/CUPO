@@ -1,7 +1,8 @@
 // Solo se importa desde componentes de servidor (usa cookies de la petición).
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { BloqueHorario, Intervalo } from "@/lib/huecos";
+import type { BloqueHorario } from "@/lib/huecos";
+import type { MiembroStaff, OcupadoConStaff } from "@/lib/staff";
 
 // Lecturas de la página pública. Solo usan las vistas públicas (T-04): el
 // visitante no tiene permiso sobre las tablas.
@@ -33,7 +34,8 @@ export type Servicio = {
 export type DatosReserva = {
   servicio: Servicio | null;
   horario: BloqueHorario[];
-  ocupados: Intervalo[];
+  ocupados: OcupadoConStaff[]; // con staff_id y bloqueo para filtrar por persona (HU-18)
+  staff: MiembroStaff[]; // staff activo; vacío si el negocio no tiene
 };
 
 // cache() comparte la consulta entre generateMetadata y la página en la misma
@@ -54,7 +56,7 @@ export const leerMarca = cache(async (slug: string): Promise<Marca | null> => {
 // hasta: solo hacen falta los ocupados dentro de los días que se muestran.
 export async function leerDatosReserva(negocioId: string, hasta: Date): Promise<DatosReserva> {
   const supabase = await createClient();
-  const [servicio, horario, ocupados] = await Promise.all([
+  const [servicio, horario, ocupados, staff] = await Promise.all([
     // En el MVP hay un servicio activo; si hubiera más, se usa el más antiguo,
     // igual que reservar_cita cuando no recibe p_servicio_id.
     supabase
@@ -71,12 +73,19 @@ export async function leerDatosReserva(negocioId: string, hasta: Date): Promise<
       .eq("negocio_id", negocioId),
     supabase
       .from("vista_ocupado")
-      .select("inicio, fin")
+      .select("inicio, fin, staff_id, bloqueo")
       .eq("negocio_id", negocioId)
       .lt("inicio", hasta.toISOString()),
+    // HU-18: en el orden en que el negocio los registró.
+    supabase
+      .from("vista_staff")
+      .select("id, nombre")
+      .eq("negocio_id", negocioId)
+      .order("creado_en", { ascending: true })
+      .order("id", { ascending: true }),
   ]);
 
-  for (const r of [servicio, horario, ocupados]) {
+  for (const r of [servicio, horario, ocupados, staff]) {
     if (r.error) throw new Error(`No se pudo leer la disponibilidad: ${r.error.message}`);
   }
 
@@ -84,5 +93,6 @@ export async function leerDatosReserva(negocioId: string, hasta: Date): Promise<
     servicio: servicio.data,
     horario: horario.data ?? [],
     ocupados: ocupados.data ?? [],
+    staff: staff.data ?? [],
   };
 }

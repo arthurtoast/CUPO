@@ -24,6 +24,7 @@ type Cita = {
   nombre_cliente: string;
   estado: "confirmada" | "cancelada";
   servicio: { nombre: string } | null;
+  staff: { nombre: string } | null; // HU-18: con quién es la cita
 };
 
 const NOMBRES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -48,7 +49,7 @@ export async function AgendaSemanal({ semana }: { semana?: string }) {
   const [citas, horario] = await Promise.all([
     supabase
       .from("cita")
-      .select("id, inicio, fin, nombre_cliente, estado, servicio(nombre)")
+      .select("id, inicio, fin, nombre_cliente, estado, servicio(nombre), staff:staff!cita_staff_del_negocio(nombre)")
       .gte("inicio", desde.toISOString())
       .lt("inicio", hasta.toISOString())
       .order("inicio"),
@@ -152,7 +153,7 @@ export async function AgendaSemanal({ semana }: { semana?: string }) {
                   return (
                     <div
                       key={p.cita.id}
-                      title={`${hora} · ${p.cita.nombre_cliente} · ${p.cita.servicio?.nombre ?? "Servicio"}${cancelada ? " · Cancelada" : ""}`}
+                      title={`${hora} · ${p.cita.nombre_cliente} · ${p.cita.servicio?.nombre ?? "Servicio"}${p.cita.staff ? ` · con ${p.cita.staff.nombre}` : ""}${cancelada ? " · Cancelada" : ""}`}
                       className={`absolute overflow-hidden rounded-[7px] border-l-[3px] px-1.5 py-1 text-[11px] leading-tight ${
                         cancelada
                           ? "border-borde bg-[#f1efe7] text-tinta-suave line-through opacity-70"
@@ -168,7 +169,9 @@ export async function AgendaSemanal({ semana }: { semana?: string }) {
                       <p className="font-semibold tabular-nums">{formatearHora(new Date(p.cita.inicio), zona)}</p>
                       <p className="truncate">{p.cita.nombre_cliente}</p>
                       {alto > 44 && (
-                        <p className="truncate text-tinta-suave">{p.cita.servicio?.nombre ?? "Servicio"}</p>
+                        <p className="truncate text-tinta-suave">
+                          {p.cita.staff ? `con ${p.cita.staff.nombre}` : (p.cita.servicio?.nombre ?? "Servicio")}
+                        </p>
                       )}
                     </div>
                   );

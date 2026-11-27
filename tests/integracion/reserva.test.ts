@@ -111,7 +111,7 @@ test("flujo de reserva de un visitante contra Supabase local", { skip: sinSupaba
   await t.test("la vista de ocupados no expone datos del cliente", async () => {
     const { data, error } = await supabase.from("vista_ocupado").select("*").limit(1);
     assert.ifError(error);
-    assert.deepEqual(Object.keys(data![0]!).sort(), ["fin", "inicio", "negocio_id"]);
+    assert.deepEqual(Object.keys(data![0]!).sort(), ["bloqueo", "fin", "inicio", "negocio_id", "staff_id"]);
     const directo = await supabase.from("cita").select("id, correo_cliente").like("correo_cliente", `${marca}%`);
     assert.ok(directo.error || directo.data!.length === 0, "el visitante no lee la tabla cita");
   });

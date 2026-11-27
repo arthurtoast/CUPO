@@ -77,6 +77,7 @@ export function validarDatos(entrada: {
 export const CODIGOS_ERROR = [
   "negocio_no_existe",
   "servicio_invalido",
+  "staff_invalido",
   "datos_invalidos",
   "horario_pasado",
   "fuera_de_horario",
@@ -100,6 +101,7 @@ export const ERRORES_DE_HORARIO: ReadonlySet<CodigoError> = new Set([
 const MENSAJES: Record<CodigoError, string> = {
   negocio_no_existe: "Este negocio ya no recibe reservas en línea.",
   servicio_invalido: "Este servicio ya no está disponible. Recarga la página.",
+  staff_invalido: "Esa persona ya no tiene agenda disponible. Elige con quién y vuelve a intentar.",
   datos_invalidos: "Revisa tu nombre, correo y teléfono.",
   horario_pasado: "Ese horario ya pasó. Elige otro.",
   fuera_de_horario: "Ese horario ya no está disponible. Elige otro.",

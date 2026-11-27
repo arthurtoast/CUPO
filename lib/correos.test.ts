@@ -137,3 +137,12 @@ test("HU-15: el asunto del aviso es de una sola línea", () => {
   const c = avisoCancelacionPorNegocio({ ...base, negocio: { ...base.negocio, nombre: "Uno\nDos" } });
   assert.doesNotMatch(c.asunto, /[\r\n]/);
 });
+
+test("HU-18: con staff, los correos dicen con quién; sin staff, no", () => {
+  const conStaff = { ...datos(), staff: "Ana" };
+  for (const c of [correoParaCliente(conStaff), avisoParaNegocio(conStaff, "spa@correo.test")]) {
+    assert.ok(c.texto.includes("Con: Ana"));
+    assert.ok(c.html.includes(">Ana<"));
+  }
+  assert.ok(!correoParaCliente(datos()).texto.includes("Con:"));
+});
