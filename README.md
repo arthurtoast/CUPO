@@ -7,11 +7,13 @@
 | | |
 | --- | --- |
 | **Colaboradores** | [@arthurtoast](https://github.com/arthurtoast) · [@data584](https://github.com/data584) |
-| **Estado** | Sprint 0 (Discovery) |
+| **Estado** | Sprint 3 (pulido, pruebas y modelo de negocio) |
 | **Backlog** | [Issues](../../issues) · Project "Cupo — Backlog" |
 
 ## Documentación
 
+- [Documento de visión](docs/VISION.md)
+- [Propuesta de valor y modelo de negocio](docs/MODELO-DE-NEGOCIO.md)
 - [Wireframes de las 3 pantallas clave](#pantallas-clave)
 - [Historias de usuario](../../issues): las 15 historias del MVP, con criterios de aceptación, como Issues
 
