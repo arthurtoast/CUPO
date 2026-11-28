@@ -18,6 +18,7 @@ type Props = {
   dias: Dia[];
   staff: MiembroStaff[]; // HU-18: staff activo; vacío si el negocio no tiene
   elegido: MiembroStaff | null; // con quién se están viendo los horarios
+  chat?: React.ReactNode; // HU-17: botón y panel del chat que agenda
 };
 
 const estadoInicial: EstadoReserva = { tipo: "inicial" };
@@ -55,7 +56,7 @@ const libres = (dia: Dia) => dia.huecos.filter((h) => h.libre).length;
 
 // ---------------------------------------------------------------------------
 
-export function Reservador({ slug, marca, servicio, zonaHoraria, dias, staff, elegido }: Props) {
+export function Reservador({ slug, marca, servicio, zonaHoraria, dias, staff, elegido, chat }: Props) {
   const [estado, accion, enviando] = useActionState(reservar, estadoInicial);
   const [fechaElegida, setFechaElegida] = useState<string | null>(null);
   const [inicioElegido, setInicioElegido] = useState<string | null>(null);
@@ -139,6 +140,8 @@ export function Reservador({ slug, marca, servicio, zonaHoraria, dias, staff, el
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col">
       {encabezado}
+
+      {chat /* aporta: HU-17, entrada al chat debajo del encabezado */}
 
       <SelectorStaff staff={staff} elegido={elegido} />
 

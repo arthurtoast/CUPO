@@ -39,6 +39,33 @@ export function normalizarDatos(entrada: {
   };
 }
 
+// HU-17: valida un solo campo (el chat pide los datos de uno en uno). Normaliza
+// igual que normalizarDatos y aplica las mismas reglas que validarDatos.
+export function validarCampo(
+  campo: CampoCliente,                                                            // aporta: cuál de los tres datos
+  valor: unknown,                                                                 // aporta: lo que escribió el cliente
+): { ok: true; valor: string } | { ok: false; error: string } {
+  const limpio = normalizarDatos({ [campo]: valor })[campo];                      // aporta: misma limpieza que la base
+  if (campo === "nombre") {                                                       // aporta: reglas del nombre
+    const largo = [...limpio].length;                                             // aporta: char_length cuenta caracteres, no unidades UTF-16
+    if (largo === 0) return { ok: false, error: "Escribe tu nombre." };           // aporta: vacío no
+    if (largo > NOMBRE_MAX) {                                                     // aporta: tope de la base
+      return { ok: false, error: `Tu nombre es muy largo (máximo ${NOMBRE_MAX} caracteres).` };
+    }
+  } else if (campo === "correo") {                                                // aporta: reglas del correo
+    if (!limpio) return { ok: false, error: "Escribe tu correo." };               // aporta: vacío no
+    if (!CORREO.test(limpio)) {                                                   // aporta: misma expresión que la base
+      return { ok: false, error: "Revisa tu correo: debe verse como nombre@correo.com." };
+    }
+  } else {                                                                        // aporta: reglas del teléfono
+    if (!limpio) return { ok: false, error: "Escribe tu teléfono." };             // aporta: vacío no
+    if (limpio.length < TELEFONO_MIN || limpio.length > TELEFONO_MAX) {           // aporta: de 10 a 15 dígitos
+      return { ok: false, error: `Tu teléfono debe tener de ${TELEFONO_MIN} a ${TELEFONO_MAX} dígitos.` };
+    }
+  }
+  return { ok: true, valor: limpio };                                             // aporta: listo para guardar
+}
+
 export function validarDatos(entrada: {
   nombre?: unknown;
   correo?: unknown;
@@ -46,25 +73,11 @@ export function validarDatos(entrada: {
 }): ResultadoValidacion {
   const datos = normalizarDatos(entrada);
   const errores: Partial<Record<CampoCliente, string>> = {};
-
-  // char_length de Postgres cuenta caracteres, no unidades UTF-16.
-  const largoNombre = [...datos.nombre].length;
-  if (largoNombre === 0) {
-    errores.nombre = "Escribe tu nombre.";
-  } else if (largoNombre > NOMBRE_MAX) {
-    errores.nombre = `Tu nombre es muy largo (máximo ${NOMBRE_MAX} caracteres).`;
-  }
-
-  if (!datos.correo) {
-    errores.correo = "Escribe tu correo.";
-  } else if (!CORREO.test(datos.correo)) {
-    errores.correo = "Revisa tu correo: debe verse como nombre@correo.com.";
-  }
-
-  if (!datos.telefono) {
-    errores.telefono = "Escribe tu teléfono.";
-  } else if (datos.telefono.length < TELEFONO_MIN || datos.telefono.length > TELEFONO_MAX) {
-    errores.telefono = `Tu teléfono debe tener de ${TELEFONO_MIN} a ${TELEFONO_MAX} dígitos.`;
+  // HU-17: las reglas viven en validarCampo para que el chat y el formulario
+  // digan exactamente lo mismo.
+  for (const campo of ["nombre", "correo", "telefono"] as const) {               // aporta: los tres campos en orden
+    const r = validarCampo(campo, entrada[campo]);                                // aporta: misma regla que el chat
+    if (!r.ok) errores[campo] = r.error;                                          // aporta: junta los errores
   }
 
   return Object.keys(errores).length === 0 ? { ok: true, datos } : { ok: false, errores };
