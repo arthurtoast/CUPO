@@ -9,6 +9,7 @@
 | **Colaboradores** | [@arthurtoast](https://github.com/arthurtoast) · [@data584](https://github.com/data584) |
 | **Estado** | Sprint 3 (pulido, pruebas y modelo de negocio) |
 | **Backlog** | [Issues](../../issues) · Project "Cupo — Backlog" |
+| **En línea** | https://cupo-neon.vercel.app |
 
 ## Documentación
 
