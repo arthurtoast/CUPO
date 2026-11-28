@@ -14,7 +14,8 @@ supabase/
 │   ├── 20261107000200_hu15_cancelar_por_negocio.sql    cancelar_cita_negocio
 │   ├── 20261121000100_hu16_personalizacion.sql         portada, bienvenida y redes
 │   ├── 20261126000100_hu18_staff.sql                   tabla staff y agenda por persona
-│   └── 20261127000100_t18_permisos_explicitos.sql      permisos de tabla explícitos (producción)
+│   ├── 20261127000100_t18_permisos_explicitos.sql      permisos de tabla explícitos (producción)
+│   └── 20261128000100_registro_atomico.sql             el negocio nace con el usuario (trigger en auth.users)
 ├── seed.sql                                        negocio de prueba (solo local)
 ├── tests/database/*.test.sql                       pruebas pgTAP
 └── tests/concurrencia.sh                           N reservas simultáneas del mismo hueco
@@ -124,6 +125,10 @@ select * from cancelar_por_token('<token>');  -- la pasa a cancelada; regresa ci
 | `cita_pasada` | P0001 | La cita ya empezó o ya pasó |
 
 La cita no se borra: queda `cancelada` con `cancelada_en`, el negocio la ve tachada en su agenda y el horario se libera solo, porque `cita_sin_traslape` y `vista_ocupado` solo cuentan las confirmadas. Más detalle en `docs/cancelacion.md`.
+
+## Registro atómico (trigger `cupo_negocio_al_registrar`)
+
+El registro manda el nombre del negocio dentro del `signUp` (`options.data.nombre_negocio`). Un trigger `after insert` en `auth.users` llama a `cupo_crear_negocio_al_registrar()`, que crea la fila de `negocio` en la misma transacción. Si falla (por ejemplo, `nombre_invalido`), el `signUp` falla completo y no queda un usuario sin negocio. Los usuarios creados sin `nombre_negocio` (la semilla, el panel de Supabase, las pruebas) no reciben negocio automático. El slug sale de `cupo_slug_base(nombre)`; si choca o es una ruta reservada, se le agrega un sufijo de 4 caracteres. Detalle en `docs/registro.md`.
 
 ## `crear_bloqueos` (HU-05)
 
