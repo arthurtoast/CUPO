@@ -13,7 +13,8 @@ supabase/
 │   ├── 20261107000100_hu06_logos.sql                   buckets de logos y portadas
 │   ├── 20261107000200_hu15_cancelar_por_negocio.sql    cancelar_cita_negocio
 │   ├── 20261121000100_hu16_personalizacion.sql         portada, bienvenida y redes
-│   └── 20261126000100_hu18_staff.sql                   tabla staff y agenda por persona
+│   ├── 20261126000100_hu18_staff.sql                   tabla staff y agenda por persona
+│   └── 20261127000100_t18_permisos_explicitos.sql      permisos de tabla explícitos (producción)
 ├── seed.sql                                        negocio de prueba (solo local)
 ├── tests/database/*.test.sql                       pruebas pgTAP
 └── tests/concurrencia.sh                           N reservas simultáneas del mismo hueco
@@ -53,6 +54,14 @@ Fechas y horas absolutas en `timestamptz` (UTC). La interfaz las muestra con `ne
 | --- | --- | --- |
 | Visitante sin sesión | `anon` | Leer las vistas públicas y ejecutar `reservar_cita`, `cita_por_token` y `cancelar_por_token`. Ninguna tabla. |
 | Dueño del negocio | `authenticated` | Leer y editar sus filas de `negocio`, `horario_atencion`, `servicio`, `bloqueo` y `staff` (en `staff`, sin borrar). En `cita`: leer y cancelar (`estado`), nunca crear, borrar ni cambiar datos del cliente. |
+
+### Permisos de tabla explícitos (T-18)
+
+Desde el 30 de mayo de 2026, Supabase ya no da permisos automáticos sobre las tablas de `public` en proyectos nuevos ([aviso oficial](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically)). En local seguían llegando y todo funcionaba. En el proyecto de producción, el registro fallaba con `permission denied for table negocio` (42501) y la app mostraba "No pudimos crear tu negocio".
+
+`20261127000100_t18_permisos_explicitos.sql` da, tabla por tabla, los permisos de la tabla de arriba, y quita los que la app no usa (`truncate`, `references`, `trigger`). Así la base queda igual en local y en la nube. `service_role` (la llave secreta, solo en el servidor) tiene `select, insert, update, delete` en las seis tablas.
+
+`10_permisos.test.sql` fija los permisos con `table_privs_are` y `column_privs_are`, y prueba que un dueño recién registrado puede crear su negocio. **Regla para migraciones nuevas:** cada `create table` va con su `grant` explícito. Si no, en producción la tabla queda inaccesible aunque en local funcione.
 
 ### Vistas públicas (para la página de reserva)
 
