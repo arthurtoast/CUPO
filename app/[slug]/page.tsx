@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { calcularDias } from "@/lib/huecos";
 import { COLOR_POR_DEFECTO, esColorValido } from "@/lib/marca";
 import { elegirStaff, ocupadosPara } from "@/lib/staff";
+import { ChatReserva } from "./chat-reserva";                                     // aporta: HU-17, chat que agenda
 import { leerDatosReserva, leerMarca } from "./datos";
 import { Reservador } from "./reservador";
 
@@ -61,17 +62,23 @@ async function Reserva({
   // HU-06: el color del negocio pinta botones y selección de día y hora.
   const acento = esColorValido(marca.color_acento) ? marca.color_acento : COLOR_POR_DEFECTO;
 
-  const dias =
+  // Días de una persona (o del carril sin staff). HU-17: el chat necesita los
+  // de todas las personas para que el cliente elija con quién dentro del chat.
+  const diasDe = (staffId: string | null) =>                                      // aporta: mismo cálculo para página y chat
     servicio && horario.length > 0
       ? calcularDias({
           horario,
-          ocupados: ocupadosPara(ocupados, elegido?.id ?? null),
+          ocupados: ocupadosPara(ocupados, staffId),
           duracionMin: servicio.duracion_min,
           zonaHoraria: marca.zona_horaria,
           ahora,
           dias: DIAS_VISIBLES,
         })
       : [];
+  const opciones = staff.length > 0                                               // aporta: una opción por persona, o una sin staff
+    ? staff.map((m) => ({ staff: m, dias: diasDe(m.id) }))
+    : [{ staff: null, dias: diasDe(null) }];
+  const dias = opciones.find((o) => (o.staff?.id ?? null) === (elegido?.id ?? null))?.dias ?? []; // aporta: los de la persona elegida en la página
 
   return (
     <div
@@ -99,6 +106,19 @@ async function Reserva({
         servicio={servicio}
         zonaHoraria={marca.zona_horaria}
         dias={dias}
+        chat={servicio && (
+          <ChatReserva                                                              // aporta: HU-17; usa los días de todas las personas
+            slug={marca.slug}
+            servicioId={servicio.id}
+            contexto={{
+              negocio: marca.nombre,
+              telefono: marca.telefono_publico,
+              direccion: marca.direccion,
+              servicio: { nombre: servicio.nombre, duracion_min: servicio.duracion_min },
+              opciones,
+            }}
+          />
+        )}
       />
     </div>
   );
